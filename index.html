@@ -650,6 +650,7 @@
                 initAudioAnalyser();
                 
                 // Écouteurs d'événements pour les lecteurs
+                // Ces écouteurs sont pour l'état général du lecteur, pas les erreurs spécifiques de chargement
                 videoPlayer.addEventListener('play', () => {
                     isPlaying = true;
                     updatePlaylistDisplay();
@@ -684,21 +685,6 @@
                 
                 audioPlayer.addEventListener('ended', () => {
                     nextTrack();
-                });
-                
-                videoPlayer.addEventListener('error', (e) => {
-                    console.error("Erreur de lecture vidéo:", e);
-                    showPlaceholder(`ERROR: Cannot play ${playlist[currentIndex]?.name || ''}`);
-                    isPlaying = false;
-                    updatePlaylistDisplay();
-                    stopStatsMonitoring();
-                });
-                
-                audioPlayer.addEventListener('error', (e) => {
-                    console.error("Erreur de lecture audio:", e);
-                    showPlaceholder(`ERROR: Cannot play ${playlist[currentIndex]?.name || ''}`);
-                    isPlaying = false;
-                    updatePlaylistDisplay();
                 });
                 
                 // Gestion du chargement de fichiers
@@ -903,7 +889,7 @@
                 const displayName = fileName.replace(/\.[^/.]+$/, "");
                 const fileExt = fileName.split('.').pop().toLowerCase();
 
-                event.target.value = '';
+                event.target.value = ''; // Réinitialiser l'input file pour permettre de recharger le même fichier
 
                 if (fileExt === 'm3u8' || fileExt === 'm3u') {
                     const reader = new FileReader();
@@ -947,12 +933,12 @@
                     reader.readAsText(file);
                 }
                 else if (file.type.startsWith('video/') || 
-                        ['mp4', 'mov', 'avi', 'mkv'].includes(fileExt)) {
+                         ['mp4', 'mov', 'mkv', 'avi'].includes(fileExt)) {
                     const fileUrl = URL.createObjectURL(file);
                     addToPlaylist({
                         name: displayName,
                         url: fileUrl,
-                        type: fileExt.toUpperCase()
+                        type: file.type.startsWith('video/') ? file.type.split('/')[1].toUpperCase() : fileExt.toUpperCase()
                     });
                 }
                 else if (file.type.startsWith('audio/') || 
@@ -1053,10 +1039,11 @@
             function hidePlaceholder() {
                 videoPlaceholder.style.display = 'none';
                 videoPlaceholder.classList.remove('flicker');
+                // Ajuster l'affichage en fonction du mode audio/vidéo
                 if (isAudioMode) {
                     videoPlayer.style.display = 'none';
                     audioVisualizer.style.display = 'flex';
-                    networkInfo.style.display = 'none';
+                    networkInfo.style.display = 'none'; // Pas d'infos réseau pour l'audio
                 } else {
                     videoPlayer.style.display = 'block';
                     audioVisualizer.style.display = 'none';
@@ -1072,23 +1059,30 @@
                 
                 const track = playlist[currentIndex];
                 
+                // Détruire l'instance HLS si elle existe
                 if (hls) {
                     hls.destroy();
                     hls = null;
                 }
                 
+                // Réinitialiser les sources des lecteurs
                 videoPlayer.src = '';
                 audioPlayer.src = '';
-                videoPlayer.load();
-                audioPlayer.load();
-                cancelAnimationFrame(animationId);
-                stopStatsMonitoring();
+                videoPlayer.load(); // Recharger pour vider le buffer
+                audioPlayer.load(); // Recharger pour vider le buffer
+                cancelAnimationFrame(animationId); // Arrêter l'animation du visualiseur
+                stopStatsMonitoring(); // Arrêter la surveillance des stats
 
+                // Supprimer les écouteurs d'erreurs précédents pour éviter les doublons
+                videoPlayer.removeEventListener('error', handleVideoError);
+                audioPlayer.removeEventListener('error', handleAudioError);
+
+                // Déterminer si le mode est audio ou vidéo
                 const isAudio = ['MP3', 'WAV', 'FLAC'].includes(track.type);
                 isAudioMode = isAudio;
                 
                 showPlaceholder(`LOADING: ${track.name}`);
-                videoPlaceholder.classList.add('pulse');
+                videoPlaceholder.classList.add('pulse'); // Effet de chargement
 
                 if (track.type === "HLS" && Hls.isSupported()) {
                     // Lecture HLS
@@ -1098,10 +1092,17 @@
                     
                     hls.on(Hls.Events.MANIFEST_PARSED, function(event, data) {
                         videoPlayer.playbackRate = playbackRate;
-                        videoPlayer.play();
-                        videoPlaceholder.classList.remove('pulse');
+                        videoPlayer.play()
+                            .then(() => {
+                                videoPlaceholder.classList.remove('pulse');
+                            })
+                            .catch(error => {
+                                console.error("HLS video play() error:", error);
+                                showPlaceholder(`ERROR: Cannot play HLS ${track.name}\n(Autoplay blocked or other issue)`);
+                                isPlaying = false;
+                                updatePlaylistDisplay();
+                            });
                         
-                        // Mettre à jour les niveaux de qualité disponibles
                         qualityLevels = hls.levels;
                         updateQualityMenu(qualityLevels);
                         currentQuality = 'auto';
@@ -1124,13 +1125,14 @@
                     // Lecture audio
                     audioPlayer.src = track.url;
                     audioPlayer.playbackRate = playbackRate;
+                    audioPlayer.addEventListener('error', handleAudioError); // Ajouter l'écouteur d'erreur
                     audioPlayer.play()
                         .then(() => {
                             videoPlaceholder.classList.remove('pulse');
                             
                             // Connecter l'analyseur audio
                             if (audioContext && audioSource) {
-                                audioSource.disconnect();
+                                audioSource.disconnect(); // Déconnecter l'ancienne source si elle existe
                             }
                             audioSource = audioContext.createMediaElementSource(audioPlayer);
                             audioSource.connect(analyser);
@@ -1138,28 +1140,40 @@
                         })
                         .catch(error => {
                             console.error("Audio playback error:", error);
-                            showPlaceholder(`ERROR: Cannot play ${track.name}`);
+                            showPlaceholder(`ERROR: Cannot play ${track.name}\n(Autoplay blocked or other issue)`);
                             isPlaying = false;
                             updatePlaylistDisplay();
                         });
                 } else {
-                    // Lecture vidéo standard
+                    // Lecture vidéo standard (pour MP4, MOV, MKV, AVI, etc. et autres URL directes)
                     videoPlayer.src = track.url;
                     videoPlayer.playbackRate = playbackRate;
+                    videoPlayer.addEventListener('error', handleVideoError); // Ajouter l'écouteur d'erreur
                     videoPlayer.play()
                         .then(() => {
                             videoPlaceholder.classList.remove('pulse');
                             startStatsMonitoring();
                         })
                         .catch(error => {
-                            console.error("Video playback error:", error);
-                            showPlaceholder(`ERROR: Cannot play ${track.name}`);
+                            console.error("Video playback error (standard):", error);
+                            let errorMessage = `ERROR: Cannot play ${track.name}`;
+                            if (error.name === "NotSupportedError") {
+                                errorMessage += "\n(Format or codec not supported by browser)";
+                            } else if (error.name === "AbortError") {
+                                errorMessage += "\n(Playback aborted)";
+                            } else if (error.name === "NetworkError") {
+                                errorMessage += "\n(Network issue)";
+                            } else if (error.message.includes("autoplay")) {
+                                errorMessage += "\n(Autoplay blocked)";
+                            }
+                            showPlaceholder(errorMessage);
                             isPlaying = false;
                             updatePlaylistDisplay();
                         });
                 }
             }
             
+            // Fonction de gestion d'erreur pour HLS.js
             function handlePlaybackError(trackName, errorData) {
                 if (errorData.fatal) {
                     switch(errorData.type) {
@@ -1177,6 +1191,63 @@
                     updatePlaylistDisplay();
                     stopStatsMonitoring();
                 }
+            }
+
+            // Fonction de gestion d'erreur pour l'élément <video> natif
+            function handleVideoError(e) {
+                console.error("Video element error:", e);
+                let errorMessage = `VIDEO ERROR: ${playlist[currentIndex]?.name || 'Unknown'}`;
+                if (videoPlayer.error) {
+                    switch (videoPlayer.error.code) {
+                        case MediaError.MEDIA_ERR_ABORTED:
+                            errorMessage += "\n(Playback aborted)";
+                            break;
+                        case MediaError.MEDIA_ERR_NETWORK:
+                            errorMessage += "\n(Network error)";
+                            break;
+                        case MediaError.MEDIA_ERR_DECODE:
+                            errorMessage += "\n(Decoding error - unsupported codec or corrupted file)";
+                            break;
+                        case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
+                            errorMessage += "\n(Source not supported - unsupported format or codec)";
+                            break;
+                        default:
+                            errorMessage += "\n(Unknown error)";
+                            break;
+                    }
+                }
+                showPlaceholder(errorMessage);
+                isPlaying = false;
+                updatePlaylistDisplay();
+                stopStatsMonitoring();
+            }
+
+            // Fonction de gestion d'erreur pour l'élément <audio> natif
+            function handleAudioError(e) {
+                console.error("Audio element error:", e);
+                let errorMessage = `AUDIO ERROR: ${playlist[currentIndex]?.name || 'Unknown'}`;
+                if (audioPlayer.error) {
+                    switch (audioPlayer.error.code) {
+                        case MediaError.MEDIA_ERR_ABORTED:
+                            errorMessage += "\n(Playback aborted)";
+                            break;
+                        case MediaError.MEDIA_ERR_NETWORK:
+                            errorMessage += "\n(Network error)";
+                            break;
+                        case MediaError.MEDIA_ERR_DECODE:
+                            errorMessage += "\n(Decoding error - unsupported codec or corrupted file)";
+                            break;
+                        case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
+                            errorMessage += "\n(Source not supported - unsupported format or codec)";
+                            break;
+                        default:
+                            errorMessage += "\n(Unknown error)";
+                            break;
+                    }
+                }
+                showPlaceholder(errorMessage);
+                isPlaying = false;
+                updatePlaylistDisplay();
             }
             
             function pause() {
@@ -1258,7 +1329,7 @@
             
             function decreaseSpeed() {
                 if (playbackRate > 0.5) {
-                    playbackRate -= 0.1;
+                    playbackRate = Math.max(0.5, playbackRate - 0.1); // S'assurer de ne pas descendre en dessous de 0.5
                     if (isAudioMode) {
                         audioPlayer.playbackRate = playbackRate;
                     } else {
@@ -1270,7 +1341,7 @@
             
             function increaseSpeed() {
                 if (playbackRate < 2.0) {
-                    playbackRate += 0.1;
+                    playbackRate = Math.min(2.0, playbackRate + 0.1); // S'assurer de ne pas dépasser 2.0
                     if (isAudioMode) {
                         audioPlayer.playbackRate = playbackRate;
                     } else {
@@ -1281,16 +1352,10 @@
             }
             
             function seek(seconds) {
-                if (isAudioMode) {
-                    if (audioPlayer.readyState > 0) {
-                        audioPlayer.currentTime += seconds;
-                        showSeekEffect(seconds > 0);
-                    }
-                } else {
-                    if (videoPlayer.readyState > 0) {
-                        videoPlayer.currentTime += seconds;
-                        showSeekEffect(seconds > 0);
-                    }
+                let player = isAudioMode ? audioPlayer : videoPlayer;
+                if (player.readyState > 0) {
+                    player.currentTime += seconds;
+                    showSeekEffect(seconds > 0);
                 }
             }
             
