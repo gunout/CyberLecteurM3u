@@ -175,8 +175,8 @@
         .volume-container {
             display: flex;
             align-items: center;
-            margin-left: auto; /* Déplacé à droite */
-            order: 1; /* Pour le mettre à droite */
+            margin-left: auto;
+            order: 1;
         }
 
         .volume-label {
@@ -704,13 +704,13 @@
                 // Gestion du chargement de fichiers
                 fileInput.addEventListener('change', handleFileSelect);
                 loadVideoBtn.addEventListener('click', () => {
-                    fileInput.accept = "video/*,.m3u8,.m3u,.mp4,.mov,.avi,.mkv";
+                    fileInput.accept = "video/*,.m3u8,.m3u,.mp4,.mov,.avi,.mkv,.webm";
                     fileInput.click();
                     hideLoadDialog();
                 });
                 
                 loadAudioBtn.addEventListener('click', () => {
-                    fileInput.accept = "audio/*,.mp3,.wav,.flac";
+                    fileInput.accept = "audio/*,.mp3,.wav,.flac,.ogg";
                     fileInput.click();
                     hideLoadDialog();
                 });
@@ -725,12 +725,11 @@
                     const url = prompt("Enter media URL:");
                     if (url) {
                         let name = url.split('/').pop();
-                        // Retirer l'extension du nom
                         name = name.replace(/\.[^/.]+$/, "");
                         const ext = url.split('.').pop().toLowerCase();
                         const type = ext === 'm3u8' ? 'HLS' : 
-                                    ['mp4','mov','avi','mkv'].includes(ext) ? 'MP4' :
-                                    ['mp3','wav','flac'].includes(ext) ? ext.toUpperCase() : 'HTTP Stream';
+                                    ['mp4','mov','avi','mkv','webm'].includes(ext) ? ext.toUpperCase() :
+                                    ['mp3','wav','flac','ogg'].includes(ext) ? ext.toUpperCase() : 'HTTP Stream';
                         addToPlaylist({ name, url, type });
                     }
                     hideLoadDialog();
@@ -899,73 +898,58 @@
 
                 const file = files[0];
                 const fileName = file.name;
-                // Extraire le nom sans extension
                 const displayName = fileName.replace(/\.[^/.]+$/, "");
                 const fileExt = fileName.split('.').pop().toLowerCase();
 
                 event.target.value = '';
 
-                if (fileExt === 'm3u8' || fileExt === 'm3u') {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const content = e.target.result;
-                        const tracks = parseM3UPlaylist(content);
-                        
-                        if (tracks.length > 0) {
-                            loadPlaylist(tracks);
-                        } else {
-                            // Si pas de pistes trouvées, traiter comme un flux HLS direct
-                            const fileUrl = URL.createObjectURL(file);
-                            addToPlaylist({
-                                name: displayName,
-                                url: fileUrl,
-                                type: "HLS"
-                            });
-                        }
-                    };
-                    reader.readAsText(file);
-                } 
-                else if (fileExt === 'json') {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        try {
-                            const content = JSON.parse(e.target.result);
-                            if (Array.isArray(content)) {
-                                // Nettoyer les noms dans la playlist
-                                const cleanedPlaylist = content.map(item => ({
-                                    ...item,
-                                    name: item.name.replace(/\.[^/.]+$/, "")
-                                }));
-                                loadPlaylist(cleanedPlaylist);
-                            } else {
-                                alert("Invalid playlist format. Expected an array of tracks.");
-                            }
-                        } catch (err) {
-                            alert("Error parsing JSON playlist: " + err.message);
-                        }
-                    };
-                    reader.readAsText(file);
-                }
-                else if (file.type.startsWith('video/') || 
-                        ['mp4', 'mov', 'avi', 'mkv'].includes(fileExt)) {
-                    const fileUrl = URL.createObjectURL(file);
-                    addToPlaylist({
-                        name: displayName,
-                        url: fileUrl,
-                        type: fileExt.toUpperCase()
-                    });
-                }
-                else if (file.type.startsWith('audio/') || 
-                        ['mp3', 'wav', 'flac'].includes(fileExt)) {
-                    const fileUrl = URL.createObjectURL(file);
-                    addToPlaylist({
-                        name: displayName,
-                        url: fileUrl,
-                        type: fileExt.toUpperCase()
-                    });
+                // Détection du type de fichier
+                let fileType;
+                if (file.type.startsWith('video/')) {
+                    fileType = file.type.split('/')[1].toUpperCase();
+                } else if (file.type.startsWith('audio/')) {
+                    fileType = file.type.split('/')[1].toUpperCase();
                 } else {
-                    alert("Unsupported file type: " + file.type);
+                    // Détection basée sur l'extension
+                    const videoExts = ['mp4', 'mov', 'avi', 'mkv', 'webm'];
+                    const audioExts = ['mp3', 'wav', 'flac', 'ogg'];
+                    
+                    if (videoExts.includes(fileExt)) {
+                        fileType = fileExt.toUpperCase();
+                    } else if (audioExts.includes(fileExt)) {
+                        fileType = fileExt.toUpperCase();
+                    } else if (fileExt === 'm3u8' || fileExt === 'm3u') {
+                        fileType = "HLS";
+                    } else {
+                        alert("Format de fichier non supporté: " + fileExt);
+                        return;
+                    }
                 }
+
+                // Créer un lecteur temporaire pour vérifier la compatibilité
+                const tempPlayer = ['MP3', 'WAV', 'FLAC', 'OGG'].includes(fileType) 
+                    ? new Audio() 
+                    : document.createElement('video');
+
+                const fileUrl = URL.createObjectURL(file);
+                
+                tempPlayer.src = fileUrl;
+                tempPlayer.onloadedmetadata = () => {
+                    // Fichier valide, on l'ajoute à la playlist
+                    addToPlaylist({
+                        name: displayName,
+                        url: fileUrl,
+                        type: fileType
+                    });
+                    tempPlayer.remove();
+                };
+                
+                tempPlayer.onerror = () => {
+                    alert("Erreur: Le fichier ne peut pas être lu. Vérifiez le format et réessayez.");
+                    console.error("Erreur de lecture du fichier:", fileName);
+                    URL.revokeObjectURL(fileUrl);
+                    tempPlayer.remove();
+                };
             }
 
             function parseM3UPlaylist(content) {
@@ -991,8 +975,8 @@
                         currentTrack.url = trimmed;
                         const ext = trimmed.split('.').pop().toLowerCase();
                         currentTrack.type = ext === 'm3u8' ? 'HLS' : 
-                                         ['mp4','mov','avi','mkv'].includes(ext) ? 'MP4' :
-                                         ['mp3','wav','flac'].includes(ext) ? ext.toUpperCase() : 'HTTP Stream';
+                                         ['mp4','mov','avi','mkv','webm'].includes(ext) ? ext.toUpperCase() :
+                                         ['mp3','wav','flac','ogg'].includes(ext) ? ext.toUpperCase() : 'HTTP Stream';
                         tracks.push(currentTrack);
                         currentTrack = null;
                     }
@@ -1072,80 +1056,39 @@
                 
                 const track = playlist[currentIndex];
                 
-                if (hls) {
-                    hls.destroy();
-                    hls = null;
-                }
-                
-                videoPlayer.src = '';
-                audioPlayer.src = '';
-                videoPlayer.load();
-                audioPlayer.load();
-                cancelAnimationFrame(animationId);
-                stopStatsMonitoring();
-
-                const isAudio = ['MP3', 'WAV', 'FLAC'].includes(track.type);
-                isAudioMode = isAudio;
+                // Arrêter toute lecture en cours
+                stop();
                 
                 showPlaceholder(`LOADING: ${track.name}`);
                 videoPlaceholder.classList.add('pulse');
 
-                if (track.type === "HLS" && Hls.isSupported()) {
-                    // Lecture HLS
-                    hls = new Hls();
-                    hls.loadSource(track.url);
-                    hls.attachMedia(videoPlayer);
-                    
-                    hls.on(Hls.Events.MANIFEST_PARSED, function(event, data) {
-                        videoPlayer.playbackRate = playbackRate;
-                        videoPlayer.play();
-                        videoPlaceholder.classList.remove('pulse');
-                        
-                        // Mettre à jour les niveaux de qualité disponibles
-                        qualityLevels = hls.levels;
-                        updateQualityMenu(qualityLevels);
-                        currentQuality = 'auto';
-                        qualityBtn.textContent = 'AUTO';
-                    });
-                    
-                    hls.on(Hls.Events.LEVEL_SWITCHED, function(event, data) {
-                        const level = hls.levels[data.level];
-                        if (level) {
-                            currentQuality = `${level.height}p`;
-                            qualityBtn.textContent = currentQuality;
-                        }
-                    });
-                    
-                    hls.on(Hls.Events.ERROR, function (event, data) {
-                        console.error('HLS.js error:', data);
-                        handlePlaybackError(track.name, data);
-                    });
-                } else if (isAudio) {
+                const isAudio = ['MP3', 'WAV', 'FLAC', 'OGG'].includes(track.type);
+                isAudioMode = isAudio;
+
+                if (isAudio) {
                     // Lecture audio
                     audioPlayer.src = track.url;
-                    audioPlayer.playbackRate = playbackRate;
                     audioPlayer.play()
                         .then(() => {
                             videoPlaceholder.classList.remove('pulse');
-                            
-                            // Connecter l'analyseur audio
-                            if (audioContext && audioSource) {
-                                audioSource.disconnect();
-                            }
+                            initAudioAnalyser();
                             audioSource = audioContext.createMediaElementSource(audioPlayer);
                             audioSource.connect(analyser);
                             analyser.connect(audioContext.destination);
+                            visualizeAudio();
                         })
                         .catch(error => {
                             console.error("Audio playback error:", error);
-                            showPlaceholder(`ERROR: Cannot play ${track.name}`);
-                            isPlaying = false;
-                            updatePlaylistDisplay();
+                            handlePlaybackError(track.name, { fatal: true });
                         });
                 } else {
-                    // Lecture vidéo standard
+                    // Lecture vidéo
                     videoPlayer.src = track.url;
-                    videoPlayer.playbackRate = playbackRate;
+                    
+                    // Forcer le type si nécessaire (surtout pour les fichiers locaux)
+                    if (track.type === 'MP4') videoPlayer.type = 'video/mp4';
+                    if (track.type === 'WEBM') videoPlayer.type = 'video/webm';
+                    
                     videoPlayer.play()
                         .then(() => {
                             videoPlaceholder.classList.remove('pulse');
@@ -1153,26 +1096,40 @@
                         })
                         .catch(error => {
                             console.error("Video playback error:", error);
-                            showPlaceholder(`ERROR: Cannot play ${track.name}`);
-                            isPlaying = false;
-                            updatePlaylistDisplay();
+                            // Essayer une méthode alternative pour les fichiers locaux
+                            if (track.url.startsWith('blob:')) {
+                                tryAlternativeLocalPlayback(track);
+                            } else {
+                                handlePlaybackError(track.name, { fatal: true });
+                            }
                         });
                 }
+            }
+
+            function tryAlternativeLocalPlayback(track) {
+                // Méthode alternative pour la lecture des fichiers locaux
+                fetch(track.url)
+                    .then(response => response.blob())
+                    .then(blob => {
+                        const newUrl = URL.createObjectURL(blob);
+                        videoPlayer.src = newUrl;
+                        return videoPlayer.play();
+                    })
+                    .then(() => {
+                        videoPlaceholder.classList.remove('pulse');
+                        startStatsMonitoring();
+                    })
+                    .catch(err => {
+                        console.error("Alternative playback failed:", err);
+                        showPlaceholder(`ERROR: Cannot play ${track.name}`);
+                        isPlaying = false;
+                        updatePlaylistDisplay();
+                    });
             }
             
             function handlePlaybackError(trackName, errorData) {
                 if (errorData.fatal) {
-                    switch(errorData.type) {
-                        case Hls.ErrorTypes.NETWORK_ERROR:
-                            showPlaceholder(`NETWORK ERROR: ${trackName}`);
-                            break;
-                        case Hls.ErrorTypes.MEDIA_ERROR:
-                            showPlaceholder(`MEDIA ERROR: ${trackName}`);
-                            break;
-                        default:
-                            showPlaceholder(`FATAL ERROR: ${trackName}`);
-                            break;
-                    }
+                    showPlaceholder(`ERROR: Cannot play ${trackName}`);
                     isPlaying = false;
                     updatePlaylistDisplay();
                     stopStatsMonitoring();
