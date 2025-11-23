@@ -129,6 +129,13 @@
             object-fit: contain;
             display: block;
             z-index: 0;
+            transition: transform 0.3s ease;
+        }
+
+        .video-pip {
+            transform: scale(0.8);
+            transform-origin: bottom right;
+            transition: transform 0.3s ease;
         }
 
         .controls {
@@ -331,7 +338,7 @@
             flex-wrap: wrap;
         }
 
-        .speed-control, .seek-control, .quality-control {
+        .speed-control, .seek-control, .quality-control, .pip-control {
             display: flex;
             align-items: center;
             gap: 3px;
@@ -339,13 +346,13 @@
             min-width: 100px;
         }
 
-        .speed-label, .seek-label, .quality-label {
+        .speed-label, .seek-label, .quality-label, .pip-label {
             color: var(--neon-cyan);
             text-shadow: 0 0 5px var(--neon-cyan);
             font-size: 10px;
         }
 
-        .speed-btn, .seek-btn, .quality-btn {
+        .speed-btn, .seek-btn, .quality-btn, .pip-btn-small {
             background-color: transparent;
             color: var(--neon-cyan);
             border: 1px solid var(--neon-cyan);
@@ -356,12 +363,12 @@
             flex: 1;
         }
 
-        .speed-btn:hover, .seek-btn:hover, .quality-btn:hover {
+        .speed-btn:hover, .seek-btn:hover, .quality-btn:hover, .pip-btn-small:hover {
             box-shadow: var(--glow-blue);
             color: white;
         }
 
-        .speed-display, .quality-display {
+        .speed-display, .quality-display, .pip-display {
             min-width: 30px;
             text-align: center;
             color: var(--neon-pink);
@@ -484,7 +491,7 @@
             z-index: 5;
         }
 
-        .quality-menu {
+        .quality-menu, .pip-size-menu {
             display: none;
             position: absolute;
             bottom: 50px;
@@ -498,11 +505,11 @@
             width: 120px;
         }
 
-        .quality-menu.show {
+        .quality-menu.show, .pip-size-menu.show {
             display: block;
         }
 
-        .quality-item {
+        .quality-item, .pip-size-item {
             padding: 6px 10px;
             cursor: pointer;
             color: var(--neon-cyan);
@@ -510,8 +517,47 @@
             font-size: 11px;
         }
 
-        .quality-item:hover {
+        .quality-item:hover, .pip-size-item:hover {
             background-color: rgba(255, 0, 255, 0.2);
+        }
+
+        /* Styles pour le redimensionnement PiP */
+        .pip-resize-handle {
+            position: absolute;
+            background: var(--neon-pink);
+            z-index: 1000;
+        }
+
+        .pip-resize-handle.top-left {
+            top: -5px;
+            left: -5px;
+            width: 10px;
+            height: 10px;
+            cursor: nw-resize;
+        }
+
+        .pip-resize-handle.top-right {
+            top: -5px;
+            right: -5px;
+            width: 10px;
+            height: 10px;
+            cursor: ne-resize;
+        }
+
+        .pip-resize-handle.bottom-left {
+            bottom: -5px;
+            left: -5px;
+            width: 10px;
+            height: 10px;
+            cursor: sw-resize;
+        }
+
+        .pip-resize-handle.bottom-right {
+            bottom: -5px;
+            right: -5px;
+            width: 10px;
+            height: 10px;
+            cursor: se-resize;
         }
 
         /* Responsive adjustments */
@@ -542,16 +588,16 @@
                 font-size: 10px;
             }
             
-            .speed-label, .seek-label, .quality-label {
+            .speed-label, .seek-label, .quality-label, .pip-label {
                 font-size: 8px;
             }
             
-            .speed-btn, .seek-btn, .quality-btn {
+            .speed-btn, .seek-btn, .quality-btn, .pip-btn-small {
                 font-size: 8px;
                 padding: 2px 4px;
             }
             
-            .speed-display, .quality-display {
+            .speed-display, .quality-display, .pip-display {
                 font-size: 8px;
                 min-width: 25px;
             }
@@ -569,7 +615,7 @@
                 padding: 2px 3px;
             }
             
-            .quality-item {
+            .quality-item, .pip-size-item {
                 font-size: 9px;
                 padding: 4px 6px;
             }
@@ -591,7 +637,7 @@
                 opacity: 1;
             }
             
-            .control-btn, .speed-btn, .seek-btn, .quality-btn {
+            .control-btn, .speed-btn, .seek-btn, .quality-btn, .pip-btn-small {
                 min-height: 36px;
             }
         }
@@ -612,6 +658,13 @@
                     Res: N/A
                 </div>
                 <div class="quality-menu" id="qualityMenu"></div>
+                <div class="pip-size-menu" id="pipSizeMenu">
+                    <div class="pip-size-item" data-size="0.5">50%</div>
+                    <div class="pip-size-item" data-size="0.75">75%</div>
+                    <div class="pip-size-item" data-size="1.0">100%</div>
+                    <div class="pip-size-item" data-size="1.25">125%</div>
+                    <div class="pip-size-item" data-size="1.5">150%</div>
+                </div>
             </div>
             <div class="controls" style="opacity: 1;">
                 <div class="basic-controls">
@@ -647,6 +700,11 @@
                     <div class="quality-control">
                         <span class="quality-label">QUAL</span>
                         <button class="quality-btn" id="qualityBtn">AUTO</button>
+                    </div>
+
+                    <div class="pip-control">
+                        <span class="pip-label">PIP SIZE</span>
+                        <button class="pip-btn-small" id="pipSizeBtn">100%</button>
                     </div>
                 </div>
             </div>
@@ -719,6 +777,8 @@
             const qualityBtn = document.getElementById('qualityBtn');
             const qualityMenu = document.getElementById('qualityMenu');
             const pipBtn = document.getElementById('pipBtn');
+            const pipSizeBtn = document.getElementById('pipSizeBtn');
+            const pipSizeMenu = document.getElementById('pipSizeMenu');
             
             // Variables d'état
             let playlist = [];
@@ -740,6 +800,9 @@
                 resolution: 'N/A'
             };
             let statsInterval;
+            let pipSize = 1.0;
+            let isPipMode = false;
+            let pipResizeHandles = [];
             
             // Vérification du support PiP
             const isPipSupported = document.pictureInPictureEnabled;
@@ -748,12 +811,11 @@
             initPlayer();
             
             function initPlayer() {
-                // PiP setup - Correction importante
+                // PiP setup
                 if (!isPipSupported) {
                     pipBtn.disabled = true;
                     pipBtn.title = "Picture-in-Picture is not supported by your browser";
                 } else {
-                    // S'assurer que l'attribut disablePictureInPicture n'est pas présent
                     videoPlayer.removeAttribute('disablePictureInPicture');
                     pipBtn.disabled = false;
                     pipBtn.title = "Toggle Picture-in-Picture mode";
@@ -775,6 +837,16 @@
                 seekForwardBtn.addEventListener('click', () => seek(10));
                 qualityBtn.addEventListener('click', toggleQualityMenu);
                 pipBtn.addEventListener('click', togglePiP);
+                pipSizeBtn.addEventListener('click', togglePipSizeMenu);
+                
+                // Configurer les tailles PiP
+                document.querySelectorAll('.pip-size-item').forEach(item => {
+                    item.addEventListener('click', function() {
+                        const size = parseFloat(this.getAttribute('data-size'));
+                        setPipSize(size);
+                        pipSizeMenu.classList.remove('show');
+                    });
+                });
                 
                 // Configurer les lecteurs
                 videoPlayer.volume = volumeSlider.value / 100;
@@ -826,7 +898,7 @@
                     nextTrack();
                 });
 
-                // Événements PiP améliorés
+                // Événements PiP
                 videoPlayer.addEventListener('enterpictureinpicture', onEnterPip);
                 videoPlayer.addEventListener('leavepictureinpicture', onLeavePip);
                 
@@ -901,20 +973,44 @@
                         }, 3000);
                     });
                 }
+                
+                // Fermer les menus quand on clique ailleurs
+                document.addEventListener('click', (e) => {
+                    if (!qualityMenu.contains(e.target) && e.target !== qualityBtn) {
+                        qualityMenu.classList.remove('show');
+                    }
+                    if (!pipSizeMenu.contains(e.target) && e.target !== pipSizeBtn) {
+                        pipSizeMenu.classList.remove('show');
+                    }
+                });
             }
             
-            // Nouvelle fonction pour mettre à jour l'état du bouton PiP
+            // Fonction pour définir la taille PiP
+            function setPipSize(size) {
+                pipSize = size;
+                pipSizeBtn.textContent = `${Math.round(size * 100)}%`;
+                
+                // Appliquer la transformation à la vidéo si elle est en mode PiP
+                if (isPipMode) {
+                    videoPlayer.style.transform = `scale(${size})`;
+                    videoPlayer.style.transformOrigin = 'bottom right';
+                }
+            }
+            
+            function togglePipSizeMenu() {
+                pipSizeMenu.classList.toggle('show');
+            }
+            
             function updatePipButtonState() {
                 if (!isPipSupported) {
                     pipBtn.disabled = true;
                     return;
                 }
                 
-                // PiP n'est disponible que pour le contenu vidéo (pas audio)
                 pipBtn.disabled = isAudioMode || 
-                                 videoPlayer.readyState < 2 || // Pas assez de données chargées
-                                 !videoPlayer.videoWidth || // Pas de dimensions vidéo
-                                 videoPlayer.duration === Infinity; // Stream en direct
+                                 videoPlayer.readyState < 2 ||
+                                 !videoPlayer.videoWidth ||
+                                 videoPlayer.duration === Infinity;
                 
                 if (pipBtn.disabled) {
                     pipBtn.title = isAudioMode ? 
@@ -1305,7 +1401,7 @@
                 }
             }
 
-            // Fonctions PiP améliorées
+            // Fonctions PiP avec redimensionnement
             async function togglePiP() {
                 if (!isPipSupported) {
                     alert("Your browser does not support Picture-in-Picture.");
@@ -1333,25 +1429,38 @@
                     console.error('PiP Error:', error);
                     let errorMessage = "Picture-in-Picture failed.";
                     if (error.name === 'NotAllowedError') {
-                        errorMessage = "PiP permission denied. It may require a user interaction or be blocked by browser settings.";
+                        errorMessage = "PiP permission denied.";
                     } else if (error.name === 'NotSupportedError') {
                         errorMessage = "Your browser or this video does not support Picture-in-Picture.";
                     } else if (error.name === 'InvalidStateError') {
-                        errorMessage = "The video is not in a valid state for PiP (e.g., no source loaded).";
+                        errorMessage = "The video is not in a valid state for PiP.";
                     }
                     alert(errorMessage);
                 }
             }
 
             function onEnterPip() {
+                isPipMode = true;
                 pipBtn.textContent = 'EXIT PIP';
                 pipBtn.classList.add('active');
+                
+                // Appliquer la taille PiP
+                videoPlayer.style.transform = `scale(${pipSize})`;
+                videoPlayer.style.transformOrigin = 'bottom right';
+                videoPlayer.classList.add('video-pip');
+                
                 showPlaceholder("PLAYING IN PICTURE-IN-PICTURE MODE<br>(Video is in a floating window)");
             }
 
             function onLeavePip() {
+                isPipMode = false;
                 pipBtn.textContent = 'PIP';
                 pipBtn.classList.remove('active');
+                
+                // Réinitialiser la transformation
+                videoPlayer.style.transform = 'none';
+                videoPlayer.classList.remove('video-pip');
+                
                 if (isPlaying && !isAudioMode) {
                     hidePlaceholder();
                 } else if (!isPlaying) {
@@ -1406,7 +1515,6 @@
                         videoPlayer.play()
                             .then(() => {
                                 videoPlaceholder.classList.remove('pulse');
-                                // Mettre à jour PiP après que la vidéo soit prête
                                 setTimeout(updatePipButtonState, 500);
                             })
                             .catch(error => {
@@ -1462,7 +1570,6 @@
                         .then(() => {
                             videoPlaceholder.classList.remove('pulse');
                             startStatsMonitoring();
-                            // Mettre à jour PiP après que la vidéo soit prête
                             setTimeout(updatePipButtonState, 500);
                         })
                         .catch(error => {
@@ -1694,7 +1801,7 @@
             }
             
             // Effets de survol
-            const buttons = document.querySelectorAll('.control-btn, .speed-btn, .seek-btn, .quality-btn');
+            const buttons = document.querySelectorAll('.control-btn, .speed-btn, .seek-btn, .quality-btn, .pip-btn-small');
             buttons.forEach(btn => {
                 btn.addEventListener('mouseenter', function() {
                     if (this.classList.contains('pink')) {
@@ -1707,13 +1814,6 @@
                 btn.addEventListener('mouseleave', function() {
                     this.style.boxShadow = 'none';
                 });
-            });
-
-            // Fermer le menu qualité quand on clique ailleurs
-            document.addEventListener('click', (e) => {
-                if (!qualityMenu.contains(e.target) && e.target !== qualityBtn) {
-                    qualityMenu.classList.remove('show');
-                }
             });
         });
     </script>
