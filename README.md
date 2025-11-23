@@ -1,5 +1,5 @@
 # CyberLecteurM3u 
-# ( responsive and floating videos + pictures in pictures PIP ) 
+# ( Responsive + Pictures In Pictures PIP + Redimmension ) 
 
 Lecteur M3U / M3U8 , VIDEOS , AUDIOS _ ( ONLINE )
 
