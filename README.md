@@ -1,4 +1,4 @@
-# CyberLecteurM3u
+# CyberLecteurM3u ( responsive and floating videos ) 
 Lecteur M3U / M3U8 , VIDEOS , AUDIOS _ ( ONLINE )
 
 
