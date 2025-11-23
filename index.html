@@ -119,6 +119,8 @@
             z-index: 1;
             background-color: black;
             flex-direction: column;
+            text-align: center;
+            padding: 20px;
         }
 
         video {
@@ -160,6 +162,7 @@
             text-shadow: 0 0 5px var(--neon-cyan);
             flex: 1;
             min-width: 60px;
+            white-space: nowrap;
         }
 
         .control-btn:hover {
@@ -176,6 +179,11 @@
         .control-btn.pink:hover {
             box-shadow: var(--glow-pink);
             color: white;
+        }
+
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
         .volume-container {
@@ -276,6 +284,9 @@
 
         .playlist li span {
             flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         @keyframes flicker {
@@ -498,69 +509,6 @@
             background-color: rgba(255, 0, 255, 0.2);
         }
 
-        /* Mobile Floating Player */
-        .floating-player {
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            width: 200px;
-            height: 112px;
-            z-index: 1000;
-            border: 1px solid var(--neon-blue);
-            box-shadow: var(--glow-blue);
-            background-color: rgba(5, 5, 8, 0.9);
-            border-radius: 5px;
-            overflow: hidden;
-            display: none;
-        }
-
-        .floating-player.active {
-            display: block;
-        }
-
-        .floating-player video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .floating-controls {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(10, 10, 18, 0.8);
-            padding: 5px;
-            display: flex;
-            justify-content: space-between;
-        }
-
-        .floating-btn {
-            background: transparent;
-            border: none;
-            color: var(--neon-cyan);
-            cursor: pointer;
-            font-size: 10px;
-            padding: 2px 5px;
-        }
-
-        .minimize-btn {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            background: rgba(0, 0, 0, 0.5);
-            border: 1px solid var(--neon-pink);
-            color: var(--neon-pink);
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            z-index: 10;
-        }
-
         /* Responsive adjustments */
         @media (max-width: 768px) {
             .container {
@@ -620,11 +568,6 @@
                 font-size: 9px;
                 padding: 4px 6px;
             }
-            
-            .floating-player {
-                width: 150px;
-                height: 84px;
-            }
         }
 
         @media (max-width: 480px) {
@@ -634,11 +577,6 @@
             
             .playlist-container {
                 height: 35vh;
-            }
-            
-            .floating-player {
-                width: 120px;
-                height: 68px;
             }
         }
 
@@ -667,7 +605,6 @@
                 <div class="audio-visualizer" id="audioVisualizer"></div>
                 <div class="network-info" id="networkInfo"></div>
                 <div class="quality-menu" id="qualityMenu"></div>
-                <div class="minimize-btn" id="minimizeBtn">−</div>
             </div>
             <div class="controls">
                 <div class="basic-controls">
@@ -678,6 +615,7 @@
                     <button class="control-btn" id="prevBtn">PREV</button>
                     <button class="control-btn" id="nextBtn">NEXT</button>
                     <button class="control-btn pink" id="fullscreenBtn">FULL</button>
+                    <button class="control-btn pink" id="pipBtn" title="Enter Picture-in-Picture mode (draggable and resizable by OS)">PIP</button>
                     
                     <div class="volume-container">
                         <span class="volume-label">VOL</span>
@@ -715,15 +653,6 @@
             <ul class="playlist" id="playlist">
                 <!-- Les éléments de playlist seront ajoutés dynamiquement -->
             </ul>
-        </div>
-    </div>
-
-    <!-- Floating Player for Mobile -->
-    <div class="floating-player" id="floatingPlayer">
-        <video id="floatingVideo" playsinline muted></video>
-        <div class="floating-controls">
-            <button class="floating-btn" id="floatingPlayBtn">▶</button>
-            <button class="floating-btn" id="floatingCloseBtn">✕</button>
         </div>
     </div>
 
@@ -782,13 +711,7 @@
             const networkInfo = document.getElementById('networkInfo');
             const qualityBtn = document.getElementById('qualityBtn');
             const qualityMenu = document.getElementById('qualityMenu');
-            
-            // Floating player elements
-            const floatingPlayer = document.getElementById('floatingPlayer');
-            const floatingVideo = document.getElementById('floatingVideo');
-            const floatingPlayBtn = document.getElementById('floatingPlayBtn');
-            const floatingCloseBtn = document.getElementById('floatingCloseBtn');
-            const minimizeBtn = document.getElementById('minimizeBtn');
+            const pipBtn = document.getElementById('pipBtn');
             
             // Variables d'état
             let playlist = [];
@@ -810,15 +733,18 @@
                 resolution: 'N/A'
             };
             let statsInterval;
-            let isFloating = false;
-            
-            // Detect mobile device
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const isPipSupported = 'pictureInPictureEnabled' in document;
             
             // Initialisation
             initPlayer();
             
             function initPlayer() {
+                // PiP setup
+                if (!isPipSupported) {
+                    pipBtn.disabled = true;
+                    pipBtn.title = "Picture-in-Picture is not supported by your browser";
+                }
+
                 // Configurer les écouteurs d'événements
                 playBtn.addEventListener('click', play);
                 pauseBtn.addEventListener('click', pause);
@@ -834,11 +760,7 @@
                 seekBackBtn.addEventListener('click', () => seek(-10));
                 seekForwardBtn.addEventListener('click', () => seek(10));
                 qualityBtn.addEventListener('click', toggleQualityMenu);
-                
-                // Floating player controls
-                minimizeBtn.addEventListener('click', toggleFloatingPlayer);
-                floatingPlayBtn.addEventListener('click', toggleFloatingPlay);
-                floatingCloseBtn.addEventListener('click', closeFloatingPlayer);
+                pipBtn.addEventListener('click', togglePiP);
                 
                 // Configurer les lecteurs
                 videoPlayer.volume = volumeSlider.value / 100;
@@ -854,12 +776,6 @@
                     updatePlaylistDisplay();
                     hidePlaceholder();
                     startStatsMonitoring();
-                    
-                    // Sync floating player if active
-                    if (isFloating && !isAudioMode) {
-                        floatingVideo.play();
-                        floatingPlayBtn.textContent = '❚❚';
-                    }
                 });
                 
                 audioPlayer.addEventListener('play', () => {
@@ -872,14 +788,10 @@
                 videoPlayer.addEventListener('pause', () => {
                     isPlaying = false;
                     updatePlaylistDisplay();
-                    showPlaceholder(`PAUSED: ${playlist[currentIndex]?.name || ''}`);
-                    stopStatsMonitoring();
-                    
-                    // Sync floating player if active
-                    if (isFloating && !isAudioMode) {
-                        floatingVideo.pause();
-                        floatingPlayBtn.textContent = '▶';
+                    if (!document.pictureInPictureElement) {
+                        showPlaceholder(`PAUSED: ${playlist[currentIndex]?.name || ''}`);
                     }
+                    stopStatsMonitoring();
                 });
                 
                 audioPlayer.addEventListener('pause', () => {
@@ -896,20 +808,10 @@
                 audioPlayer.addEventListener('ended', () => {
                     nextTrack();
                 });
-                
-                // Sync main player with floating player time
-                videoPlayer.addEventListener('timeupdate', () => {
-                    if (isFloating && !isAudioMode) {
-                        floatingVideo.currentTime = videoPlayer.currentTime;
-                    }
-                });
-                
-                // Sync floating player with main player time
-                floatingVideo.addEventListener('timeupdate', () => {
-                    if (isFloating && !isAudioMode) {
-                        videoPlayer.currentTime = floatingVideo.currentTime;
-                    }
-                });
+
+                // PiP event listeners
+                videoPlayer.addEventListener('enterpictureinpicture', onEnterPip);
+                videoPlayer.addEventListener('leavepictureinpicture', onLeavePip);
                 
                 // Gestion du chargement de fichiers
                 fileInput.addEventListener('change', handleFileSelect);
@@ -935,7 +837,6 @@
                     const url = prompt("Enter media URL:");
                     if (url) {
                         let name = url.split('/').pop();
-                        // Retirer l'extension du nom
                         name = name.replace(/\.[^/.]+$/, "");
                         const ext = url.split('.').pop().toLowerCase();
                         const type = ext === 'm3u8' ? 'HLS' : 
@@ -963,7 +864,7 @@
                 });
                 
                 // Touch events for mobile
-                if (isMobile) {
+                if ('ontouchstart' in window) {
                     document.addEventListener('touchstart', function() {
                         const controls = document.querySelector('.controls');
                         controls.style.opacity = '1';
@@ -985,7 +886,6 @@
                     const bufferLength = analyser.frequencyBinCount;
                     dataArray = new Uint8Array(bufferLength);
                     
-                    // Créer les barres du visualiseur
                     audioVisualizer.innerHTML = '';
                     for (let i = 0; i < bufferLength; i++) {
                         const bar = document.createElement('div');
@@ -1022,7 +922,6 @@
                 let lastFpsTime = Date.now();
                 
                 statsInterval = setInterval(() => {
-                    // Calcul du débit
                     const now = Date.now();
                     const duration = (now - lastTime) / 1000;
                     lastTime = now;
@@ -1034,7 +933,6 @@
                         networkStats.bandwidth = bandwidth;
                     }
                     
-                    // Calcul des FPS
                     frames++;
                     if (now - lastFpsTime >= 1000) {
                         networkStats.fps = frames;
@@ -1042,7 +940,6 @@
                         lastFpsTime = now;
                     }
                     
-                    // Résolution actuelle
                     if (videoPlayer.videoWidth) {
                         networkStats.resolution = `${videoPlayer.videoWidth}x${videoPlayer.videoHeight}`;
                     }
@@ -1075,7 +972,6 @@
             function updateQualityMenu(levels) {
                 qualityMenu.innerHTML = '';
                 
-                // Ajouter l'option auto
                 const autoItem = document.createElement('div');
                 autoItem.className = 'quality-item';
                 autoItem.textContent = 'AUTO';
@@ -1087,7 +983,6 @@
                 });
                 qualityMenu.appendChild(autoItem);
                 
-                // Ajouter les niveaux de qualité disponibles
                 levels.forEach((level, index) => {
                     const item = document.createElement('div');
                     item.className = 'quality-item';
@@ -1122,11 +1017,10 @@
 
                 const file = files[0];
                 const fileName = file.name;
-                // Extraire le nom sans extension
                 const displayName = fileName.replace(/\.[^/.]+$/, "");
                 const fileExt = fileName.split('.').pop().toLowerCase();
 
-                event.target.value = ''; // Réinitialiser l'input file pour permettre de recharger le même fichier
+                event.target.value = '';
 
                 if (fileExt === 'm3u8' || fileExt === 'm3u') {
                     const reader = new FileReader();
@@ -1137,7 +1031,6 @@
                         if (tracks.length > 0) {
                             loadPlaylist(tracks);
                         } else {
-                            // Si pas de pistes trouvées, traiter comme un flux HLS direct
                             const fileUrl = URL.createObjectURL(file);
                             addToPlaylist({
                                 name: displayName,
@@ -1154,7 +1047,6 @@
                         try {
                             const content = JSON.parse(e.target.result);
                             if (Array.isArray(content)) {
-                                // Nettoyer les noms dans la playlist
                                 const cleanedPlaylist = content.map(item => ({
                                     ...item,
                                     name: item.name.replace(/\.[^/.]+$/, "")
@@ -1200,7 +1092,6 @@
                     const trimmed = line.trim();
                     
                     if (trimmed.startsWith('#EXTINF:')) {
-                        // Ligne d'information sur la piste
                         const durationMatch = trimmed.match(/#EXTINF:(-?\d+)/);
                         const titleMatch = trimmed.match(/,(.*)$/);
                         
@@ -1210,7 +1101,6 @@
                         };
                     } 
                     else if (trimmed && !trimmed.startsWith('#') && currentTrack) {
-                        // Ligne d'URL
                         currentTrack.url = trimmed;
                         const ext = trimmed.split('.').pop().toLowerCase();
                         currentTrack.type = ext === 'm3u8' ? 'HLS' : 
@@ -1265,7 +1155,7 @@
             }
 
             function showPlaceholder(message) {
-                videoPlaceholder.textContent = message;
+                videoPlaceholder.innerHTML = message.replace(/\n/g, '<br>');
                 videoPlaceholder.style.display = 'flex';
                 videoPlaceholder.classList.add('flicker');
                 videoPlayer.style.display = 'none';
@@ -1276,15 +1166,44 @@
             function hidePlaceholder() {
                 videoPlaceholder.style.display = 'none';
                 videoPlaceholder.classList.remove('flicker');
-                // Ajuster l'affichage en fonction du mode audio/vidéo
                 if (isAudioMode) {
                     videoPlayer.style.display = 'none';
                     audioVisualizer.style.display = 'flex';
-                    networkInfo.style.display = 'none'; // Pas d'infos réseau pour l'audio
+                    networkInfo.style.display = 'none';
                 } else {
                     videoPlayer.style.display = 'block';
                     audioVisualizer.style.display = 'none';
                     networkInfo.style.display = 'block';
+                }
+            }
+
+            // PiP Functions
+            async function togglePiP() {
+                try {
+                    if (document.pictureInPictureElement) {
+                        await document.exitPictureInPicture();
+                    } else {
+                        await videoPlayer.requestPictureInPicture();
+                    }
+                } catch (error) {
+                    console.error('PiP Error:', error);
+                    alert(`Picture-in-Picture failed: ${error.message}`);
+                }
+            }
+
+            function onEnterPip() {
+                pipBtn.textContent = 'EXIT PIP';
+                pipBtn.classList.add('active');
+                showPlaceholder("PLAYING IN PICTURE-IN-PICTURE MODE<br>(Video is in a floating window)");
+            }
+
+            function onLeavePip() {
+                pipBtn.textContent = 'PIP';
+                pipBtn.classList.remove('active');
+                if (isPlaying && !isAudioMode) {
+                    hidePlaceholder();
+                } else if (!isPlaying) {
+                    showPlaceholder(`PAUSED: ${playlist[currentIndex]?.name || ''}`);
                 }
             }
             
@@ -1296,33 +1215,34 @@
                 
                 const track = playlist[currentIndex];
                 
-                // Détruire l'instance HLS si elle existe
                 if (hls) {
                     hls.destroy();
                     hls = null;
                 }
                 
-                // Réinitialiser les sources des lecteurs
                 videoPlayer.src = '';
                 audioPlayer.src = '';
-                videoPlayer.load(); // Recharger pour vider le buffer
-                audioPlayer.load(); // Recharger pour vider le buffer
-                cancelAnimationFrame(animationId); // Arrêter l'animation du visualiseur
-                stopStatsMonitoring(); // Arrêter la surveillance des stats
+                videoPlayer.load();
+                audioPlayer.load();
+                cancelAnimationFrame(animationId);
+                stopStatsMonitoring();
 
-                // Supprimer les écouteurs d'erreurs précédents pour éviter les doublons
                 videoPlayer.removeEventListener('error', handleVideoError);
                 audioPlayer.removeEventListener('error', handleAudioError);
 
-                // Déterminer si le mode est audio ou vidéo
                 const isAudio = ['MP3', 'WAV', 'FLAC'].includes(track.type);
                 isAudioMode = isAudio;
                 
+                // Update PiP button state based on content type
+                pipBtn.disabled = isAudioMode || !isPipSupported;
+                pipBtn.title = isAudioMode ? "PiP is for video content only" : 
+                                 isPipSupported ? "Enter Picture-in-Picture mode (draggable and resizable by OS)" :
+                                 "Picture-in-Picture is not supported by your browser";
+                
                 showPlaceholder(`LOADING: ${track.name}`);
-                videoPlaceholder.classList.add('pulse'); // Effet de chargement
+                videoPlaceholder.classList.add('pulse');
 
                 if (track.type === "HLS" && Hls.isSupported()) {
-                    // Lecture HLS
                     hls = new Hls();
                     hls.loadSource(track.url);
                     hls.attachMedia(videoPlayer);
@@ -1332,15 +1252,10 @@
                         videoPlayer.play()
                             .then(() => {
                                 videoPlaceholder.classList.remove('pulse');
-                                
-                                // Setup floating player if video
-                                if (!isAudioMode && isMobile) {
-                                    setupFloatingPlayer(track.url);
-                                }
                             })
                             .catch(error => {
                                 console.error("HLS video play() error:", error);
-                                showPlaceholder(`ERROR: Cannot play HLS ${track.name}\n(Autoplay blocked or other issue)`);
+                                showPlaceholder(`ERROR: Cannot play HLS ${track.name}<br>(Autoplay blocked or other issue)`);
                                 isPlaying = false;
                                 updatePlaylistDisplay();
                             });
@@ -1364,17 +1279,14 @@
                         handlePlaybackError(track.name, data);
                     });
                 } else if (isAudio) {
-                    // Lecture audio
                     audioPlayer.src = track.url;
                     audioPlayer.playbackRate = playbackRate;
-                    audioPlayer.addEventListener('error', handleAudioError); // Ajouter l'écouteur d'erreur
+                    audioPlayer.addEventListener('error', handleAudioError);
                     audioPlayer.play()
                         .then(() => {
                             videoPlaceholder.classList.remove('pulse');
-                            
-                            // Connecter l'analyseur audio
                             if (audioContext && audioSource) {
-                                audioSource.disconnect(); // Déconnecter l'ancienne source si elle existe
+                                audioSource.disconnect();
                             }
                             audioSource = audioContext.createMediaElementSource(audioPlayer);
                             audioSource.connect(analyser);
@@ -1382,36 +1294,30 @@
                         })
                         .catch(error => {
                             console.error("Audio playback error:", error);
-                            showPlaceholder(`ERROR: Cannot play ${track.name}\n(Autoplay blocked or other issue)`);
+                            showPlaceholder(`ERROR: Cannot play ${track.name}<br>(Autoplay blocked or other issue)`);
                             isPlaying = false;
                             updatePlaylistDisplay();
                         });
                 } else {
-                    // Lecture vidéo standard (pour MP4, MOV, MKV, AVI, etc. et autres URL directes)
                     videoPlayer.src = track.url;
                     videoPlayer.playbackRate = playbackRate;
-                    videoPlayer.addEventListener('error', handleVideoError); // Ajouter l'écouteur d'erreur
+                    videoPlayer.addEventListener('error', handleVideoError);
                     videoPlayer.play()
                         .then(() => {
                             videoPlaceholder.classList.remove('pulse');
                             startStatsMonitoring();
-                            
-                            // Setup floating player if video
-                            if (!isAudioMode && isMobile) {
-                                setupFloatingPlayer(track.url);
-                            }
                         })
                         .catch(error => {
                             console.error("Video playback error (standard):", error);
                             let errorMessage = `ERROR: Cannot play ${track.name}`;
                             if (error.name === "NotSupportedError") {
-                                errorMessage += "\n(Format or codec not supported by browser)";
+                                errorMessage += "<br>(Format or codec not supported by browser)";
                             } else if (error.name === "AbortError") {
-                                errorMessage += "\n(Playback aborted)";
+                                errorMessage += "<br>(Playback aborted)";
                             } else if (error.name === "NetworkError") {
-                                errorMessage += "\n(Network issue)";
+                                errorMessage += "<br>(Network issue)";
                             } else if (error.message.includes("autoplay")) {
-                                errorMessage += "\n(Autoplay blocked)";
+                                errorMessage += "<br>(Autoplay blocked)";
                             }
                             showPlaceholder(errorMessage);
                             isPlaying = false;
@@ -1420,51 +1326,6 @@
                 }
             }
             
-            // Setup floating player for mobile
-            function setupFloatingPlayer(videoUrl) {
-                if (!isMobile) return;
-                
-                floatingVideo.src = videoUrl;
-                floatingVideo.volume = 0; // Muted for floating player
-                floatingVideo.currentTime = videoPlayer.currentTime;
-            }
-            
-            // Toggle floating player
-            function toggleFloatingPlayer() {
-                if (isAudioMode) return; // Don't show floating player for audio
-                
-                isFloating = !isFloating;
-                
-                if (isFloating) {
-                    floatingPlayer.classList.add('active');
-                    minimizeBtn.textContent = '+';
-                } else {
-                    floatingPlayer.classList.remove('active');
-                    minimizeBtn.textContent = '−';
-                }
-            }
-            
-            // Toggle play/pause in floating player
-            function toggleFloatingPlay() {
-                if (floatingVideo.paused) {
-                    videoPlayer.play();
-                    floatingVideo.play();
-                    floatingPlayBtn.textContent = '❚❚';
-                } else {
-                    videoPlayer.pause();
-                    floatingVideo.pause();
-                    floatingPlayBtn.textContent = '▶';
-                }
-            }
-            
-            // Close floating player
-            function closeFloatingPlayer() {
-                isFloating = false;
-                floatingPlayer.classList.remove('active');
-                minimizeBtn.textContent = '−';
-            }
-            
-            // Fonction de gestion d'erreur pour HLS.js
             function handlePlaybackError(trackName, errorData) {
                 if (errorData.fatal) {
                     switch(errorData.type) {
@@ -1484,26 +1345,25 @@
                 }
             }
 
-            // Fonction de gestion d'erreur pour l'élément <video> natif
             function handleVideoError(e) {
                 console.error("Video element error:", e);
                 let errorMessage = `VIDEO ERROR: ${playlist[currentIndex]?.name || 'Unknown'}`;
                 if (videoPlayer.error) {
                     switch (videoPlayer.error.code) {
                         case MediaError.MEDIA_ERR_ABORTED:
-                            errorMessage += "\n(Playback aborted)";
+                            errorMessage += "<br>(Playback aborted)";
                             break;
                         case MediaError.MEDIA_ERR_NETWORK:
-                            errorMessage += "\n(Network error)";
+                            errorMessage += "<br>(Network error)";
                             break;
                         case MediaError.MEDIA_ERR_DECODE:
-                            errorMessage += "\n(Decoding error - unsupported codec or corrupted file)";
+                            errorMessage += "<br>(Decoding error - unsupported codec or corrupted file)";
                             break;
                         case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
-                            errorMessage += "\n(Source not supported - unsupported format or codec)";
+                            errorMessage += "<br>(Source not supported - unsupported format or codec)";
                             break;
                         default:
-                            errorMessage += "\n(Unknown error)";
+                            errorMessage += "<br>(Unknown error)";
                             break;
                     }
                 }
@@ -1513,26 +1373,25 @@
                 stopStatsMonitoring();
             }
 
-            // Fonction de gestion d'erreur pour l'élément <audio> natif
             function handleAudioError(e) {
                 console.error("Audio element error:", e);
                 let errorMessage = `AUDIO ERROR: ${playlist[currentIndex]?.name || 'Unknown'}`;
                 if (audioPlayer.error) {
                     switch (audioPlayer.error.code) {
                         case MediaError.MEDIA_ERR_ABORTED:
-                            errorMessage += "\n(Playback aborted)";
+                            errorMessage += "<br>(Playback aborted)";
                             break;
                         case MediaError.MEDIA_ERR_NETWORK:
-                            errorMessage += "\n(Network error)";
+                            errorMessage += "<br>(Network error)";
                             break;
                         case MediaError.MEDIA_ERR_DECODE:
-                            errorMessage += "\n(Decoding error - unsupported codec or corrupted file)";
+                            errorMessage += "<br>(Decoding error - unsupported codec or corrupted file)";
                             break;
                         case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
-                            errorMessage += "\n(Source not supported - unsupported format or codec)";
+                            errorMessage += "<br>(Source not supported - unsupported format or codec)";
                             break;
                         default:
-                            errorMessage += "\n(Unknown error)";
+                            errorMessage += "<br>(Unknown error)";
                             break;
                     }
                 }
@@ -1575,25 +1434,18 @@
                 cancelAnimationFrame(animationId);
                 stopStatsMonitoring();
                 isPlaying = false;
-                showPlaceholder("CYBERPLAYER NEON\nREADY");
+                showPlaceholder("CYBERPLAYER NEON<br>READY");
                 updatePlaylistDisplay();
-                
-                // Reset floating player
-                if (isFloating) {
-                    closeFloatingPlayer();
-                }
             }
             
             function prevTrack() {
                 if (playlist.length === 0) return;
-                
                 currentIndex = (currentIndex - 1 + playlist.length) % playlist.length;
                 play();
             }
             
             function nextTrack() {
                 if (playlist.length === 0) return;
-                
                 currentIndex = (currentIndex + 1) % playlist.length;
                 play();
             }
@@ -1625,14 +1477,11 @@
             
             function decreaseSpeed() {
                 if (playbackRate > 0.5) {
-                    playbackRate = Math.max(0.5, playbackRate - 0.1); // S'assurer de ne pas descendre en dessous de 0.5
+                    playbackRate = Math.max(0.5, playbackRate - 0.1);
                     if (isAudioMode) {
                         audioPlayer.playbackRate = playbackRate;
                     } else {
                         videoPlayer.playbackRate = playbackRate;
-                        if (isFloating) {
-                            floatingVideo.playbackRate = playbackRate;
-                        }
                     }
                     updateSpeedDisplay();
                 }
@@ -1640,14 +1489,11 @@
             
             function increaseSpeed() {
                 if (playbackRate < 2.0) {
-                    playbackRate = Math.min(2.0, playbackRate + 0.1); // S'assurer de ne pas dépasser 2.0
+                    playbackRate = Math.min(2.0, playbackRate + 0.1);
                     if (isAudioMode) {
                         audioPlayer.playbackRate = playbackRate;
                     } else {
                         videoPlayer.playbackRate = playbackRate;
-                        if (isFloating) {
-                            floatingVideo.playbackRate = playbackRate;
-                        }
                     }
                     updateSpeedDisplay();
                 }
@@ -1657,9 +1503,6 @@
                 let player = isAudioMode ? audioPlayer : videoPlayer;
                 if (player.readyState > 0) {
                     player.currentTime += seconds;
-                    if (isFloating && !isAudioMode) {
-                        floatingVideo.currentTime = player.currentTime;
-                    }
                     showSeekEffect(seconds > 0);
                 }
             }
@@ -1709,48 +1552,6 @@
                     qualityMenu.classList.remove('show');
                 }
             });
-            
-            // Make floating player draggable
-            let isDragging = false;
-            let currentX;
-            let currentY;
-            let initialX;
-            let initialY;
-            let xOffset = 0;
-            let yOffset = 0;
-            
-            floatingPlayer.addEventListener('touchstart', dragStart);
-            floatingPlayer.addEventListener('touchend', dragEnd);
-            floatingPlayer.addEventListener('touchmove', drag);
-            
-            function dragStart(e) {
-                if (e.target === floatingPlayBtn || e.target === floatingCloseBtn) return;
-                
-                initialX = e.touches[0].clientX - xOffset;
-                initialY = e.touches[0].clientY - yOffset;
-                
-                if (e.target === floatingPlayer) {
-                    isDragging = true;
-                }
-            }
-            
-            function dragEnd(e) {
-                initialX = currentX;
-                initialY = currentY;
-                isDragging = false;
-            }
-            
-            function drag(e) {
-                if (isDragging) {
-                    e.preventDefault();
-                    currentX = e.touches[0].clientX - initialX;
-                    currentY = e.touches[0].clientY - initialY;
-                    xOffset = currentX;
-                    yOffset = currentY;
-                    
-                    floatingPlayer.style.transform = `translate(${currentX}px, ${currentY}px)`;
-                }
-            }
         });
     </script>
 </body>
