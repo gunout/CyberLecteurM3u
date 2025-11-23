@@ -600,7 +600,7 @@
                 <div class="video-placeholder flicker" id="videoPlaceholder">
                     CYBERPLAYER NEON<br>READY
                 </div>
-                <video id="videoPlayer" playsinline></video>
+                <video id="videoPlayer" playsinline disablePictureInPicture></video>
                 <audio id="audioPlayer"></audio>
                 <div class="audio-visualizer" id="audioVisualizer"></div>
                 <div class="network-info" id="networkInfo"></div>
@@ -743,6 +743,9 @@
                 if (!isPipSupported) {
                     pipBtn.disabled = true;
                     pipBtn.title = "Picture-in-Picture is not supported by your browser";
+                } else {
+                    // Enable PiP by removing the attribute if it exists
+                    videoPlayer.removeAttribute('disablePictureInPicture');
                 }
 
                 // Configurer les écouteurs d'événements
@@ -1179,15 +1182,42 @@
 
             // PiP Functions
             async function togglePiP() {
+                // Check for PiP support first
+                if (!isPipSupported) {
+                    alert("Your browser does not support Picture-in-Picture.");
+                    return;
+                }
+
+                // PiP is only for video, not audio
+                if (isAudioMode) {
+                    alert("Picture-in-Picture is only available for video content.");
+                    return;
+                }
+
+                // Ensure the video has metadata loaded before requesting PiP
+                if (videoPlayer.readyState < 2) { // HAVE_CURRENT_DATA
+                    alert("Please wait for the video to load before activating Picture-in-Picture.");
+                    return;
+                }
+
                 try {
                     if (document.pictureInPictureElement) {
                         await document.exitPictureInPicture();
                     } else {
+                        // A user gesture is required, so this must be called from a click handler
                         await videoPlayer.requestPictureInPicture();
                     }
                 } catch (error) {
                     console.error('PiP Error:', error);
-                    alert(`Picture-in-Picture failed: ${error.message}`);
+                    let errorMessage = "Picture-in-Picture failed.";
+                    if (error.name === 'NotAllowedError') {
+                        errorMessage = "PiP permission denied. It may require a user interaction or be blocked by browser settings.";
+                    } else if (error.name === 'NotSupportedError') {
+                        errorMessage = "Your browser or this video does not support Picture-in-Picture.";
+                    } else if (error.name === 'InvalidStateError') {
+                        errorMessage = "The video is not in a valid state for PiP (e.g., no source loaded).";
+                    }
+                    alert(errorMessage);
                 }
             }
 
@@ -1233,7 +1263,7 @@
                 const isAudio = ['MP3', 'WAV', 'FLAC'].includes(track.type);
                 isAudioMode = isAudio;
                 
-                // Update PiP button state based on content type
+                // Update PiP button state based on content type and browser support
                 pipBtn.disabled = isAudioMode || !isPipSupported;
                 pipBtn.title = isAudioMode ? "PiP is for video content only" : 
                                  isPipSupported ? "Enter Picture-in-Picture mode (draggable and resizable by OS)" :
