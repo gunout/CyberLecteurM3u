@@ -597,16 +597,18 @@
     <div class="container">
         <div class="player-container" id="playerContainer">
             <div class="video-container">
-                <div class="video-placeholder flicker" id="videoPlaceholder">
-                    CYBERPLAYER NEON<br>READY
+                <div class="video-placeholder pulse flicker" id="videoPlaceholder" style="display: flex;">CYBERPLAYER NEON<br>READY</div>
+                <video id="videoPlayer" playsinline="" disablepictureinpicture="" style="display: none;"></video>
+                <audio id="audioPlayer" src=""></audio>
+                <div class="audio-visualizer" id="audioVisualizer" style="display: none;"></div>
+                <div class="network-info" id="networkInfo" style="display: none;">
+                    BW: 0 kbps | 
+                    FPS: 0 | 
+                    Res: N/A
                 </div>
-                <video id="videoPlayer" playsinline disablePictureInPicture></video>
-                <audio id="audioPlayer"></audio>
-                <div class="audio-visualizer" id="audioVisualizer"></div>
-                <div class="network-info" id="networkInfo"></div>
                 <div class="quality-menu" id="qualityMenu"></div>
             </div>
-            <div class="controls">
+            <div class="controls" style="opacity: 1;">
                 <div class="basic-controls">
                     <button class="control-btn" id="loadBtn">LOAD</button>
                     <button class="control-btn" id="playBtn">PLAY</button>
@@ -615,7 +617,7 @@
                     <button class="control-btn" id="prevBtn">PREV</button>
                     <button class="control-btn" id="nextBtn">NEXT</button>
                     <button class="control-btn pink" id="fullscreenBtn">FULL</button>
-                    <button class="control-btn pink" id="pipBtn" title="Enter Picture-in-Picture mode (draggable and resizable by OS)">PIP</button>
+                    <button class="control-btn pink" id="pipBtn" title="Picture-in-Picture" disabled>PIP</button>
                     
                     <div class="volume-container">
                         <span class="volume-label">VOL</span>
@@ -650,9 +652,7 @@
                 <span>TRACK</span>
                 <span>TYPE</span>
             </div>
-            <ul class="playlist" id="playlist">
-                <!-- Les éléments de playlist seront ajoutés dynamiquement -->
-            </ul>
+            <ul class="playlist" id="playlist"></ul>
         </div>
     </div>
 
@@ -664,14 +664,15 @@
     <input type="file" id="fileInput" accept="video/*,audio/*,.m3u8,.m3u,.mp4,.mov,.avi,.mkv,.mp3,.wav,.flac">
 
     <!-- Boîte de dialogue pour les options de chargement -->
-    <div class="dialog-overlay" id="dialogOverlay"></div>
-    <div class="dialog" id="loadDialog">
+    <div class="dialog-overlay" id="dialogOverlay" style="display: none;"></div>
+    <div class="dialog" id="loadDialog" style="display: none;">
         <div class="dialog-content">
             <h3 style="color: var(--neon-cyan); text-shadow: 0 0 5px var(--neon-cyan);">LOAD MEDIA</h3>
             <button class="control-btn" id="loadVideoBtn">LOAD VIDEO FILE</button>
             <button class="control-btn" id="loadAudioBtn">LOAD AUDIO FILE</button>
             <button class="control-btn pink" id="loadPlaylistBtn">LOAD PLAYLIST FILE</button>
             <button class="control-btn" id="loadUrlBtn">LOAD FROM URL</button>
+            <button class="control-btn pink" id="loadOutremerBtn">LOAD OUTREMER.M3U</button>
         </div>
         <div class="dialog-buttons">
             <button class="control-btn pink" id="cancelLoadBtn">CANCEL</button>
@@ -705,6 +706,7 @@
             const loadAudioBtn = document.getElementById('loadAudioBtn');
             const loadPlaylistBtn = document.getElementById('loadPlaylistBtn');
             const loadUrlBtn = document.getElementById('loadUrlBtn');
+            const loadOutremerBtn = document.getElementById('loadOutremerBtn');
             const cancelLoadBtn = document.getElementById('cancelLoadBtn');
             const audioVisualizer = document.getElementById('audioVisualizer');
             const playerContainer = document.getElementById('playerContainer');
@@ -743,9 +745,6 @@
                 if (!isPipSupported) {
                     pipBtn.disabled = true;
                     pipBtn.title = "Picture-in-Picture is not supported by your browser";
-                } else {
-                    // Enable PiP by removing the attribute if it exists
-                    videoPlayer.removeAttribute('disablePictureInPicture');
                 }
 
                 // Configurer les écouteurs d'événements
@@ -850,6 +849,11 @@
                     hideLoadDialog();
                 });
                 
+                loadOutremerBtn.addEventListener('click', () => {
+                    loadM3UFromURL('https://raw.githubusercontent.com/gunout/CyberLecteurM3u/main/Bonus/outremer.m3u', 'Outre-Mer Playlist');
+                    hideLoadDialog();
+                });
+                
                 cancelLoadBtn.addEventListener('click', hideLoadDialog);
                 
                 // Détection du mouvement de la souris pour afficher les contrôles
@@ -880,6 +884,118 @@
                 }
             }
             
+            // Nouvelle fonction pour charger M3U depuis URL
+            function loadM3UFromURL(url, playlistName) {
+                showPlaceholder(`LOADING M3U: ${playlistName}`);
+                
+                fetch(url)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.text();
+                    })
+                    .then(m3uContent => {
+                        const tracks = parseM3UContent(m3uContent, url);
+                        if (tracks.length > 0) {
+                            playlist = tracks;
+                            currentIndex = 0;
+                            updatePlaylistDisplay();
+                            showPlaceholder(`M3U LOADED: ${tracks.length} channels found`);
+                            setTimeout(() => {
+                                if (playlist.length > 0) {
+                                    play();
+                                }
+                            }, 1500);
+                        } else {
+                            throw new Error("No valid channels found in M3U");
+                        }
+                    })
+                    .catch(error => {
+                        console.error("M3U loading error:", error);
+                        showPlaceholder(`M3U ERROR: ${error.message}`);
+                    });
+            }
+            
+            function parseM3UContent(content, baseUrl) {
+                const lines = content.split('\n');
+                const tracks = [];
+                let currentTrack = null;
+                let groupTitle = '';
+
+                for (const line of lines) {
+                    const trimmed = line.trim();
+                    
+                    if (trimmed.startsWith('#EXTM3U')) {
+                        continue;
+                    }
+                    
+                    if (trimmed.startsWith('#EXTGRP:')) {
+                        groupTitle = trimmed.replace('#EXTGRP:', '').trim();
+                        continue;
+                    }
+                    
+                    if (trimmed.startsWith('#EXTINF:')) {
+                        const parts = trimmed.split(',');
+                        if (parts.length >= 2) {
+                            const info = parts[0].replace('#EXTINF:', '');
+                            const name = parts.slice(1).join(',').trim();
+                            
+                            // Extraire les attributs comme group-title
+                            const attrs = info.split(' ');
+                            let trackGroup = groupTitle;
+                            
+                            attrs.forEach(attr => {
+                                if (attr.includes('group-title=')) {
+                                    trackGroup = attr.replace('group-title="', '').replace('"', '');
+                                }
+                            });
+                            
+                            currentTrack = {
+                                name: name || 'Unnamed Channel',
+                                group: trackGroup,
+                                type: 'Stream'
+                            };
+                        }
+                    } 
+                    else if (trimmed && !trimmed.startsWith('#') && currentTrack) {
+                        // C'est une URL
+                        let url = trimmed;
+                        
+                        // Gérer les URLs relatives
+                        if (url.startsWith('/')) {
+                            const base = new URL(baseUrl);
+                            url = base.origin + url;
+                        } else if (!url.startsWith('http') && !url.startsWith('https')) {
+                            const base = new URL(baseUrl);
+                            const pathParts = base.pathname.split('/');
+                            pathParts.pop(); // Remove the m3u filename
+                            const basePath = pathParts.join('/');
+                            url = base.origin + basePath + '/' + url;
+                        }
+                        
+                        currentTrack.url = url;
+                        
+                        // Déterminer le type
+                        if (url.includes('.m3u8')) {
+                            currentTrack.type = 'HLS';
+                        } else if (url.includes('.mp4') || url.includes('.mkv')) {
+                            currentTrack.type = 'MP4';
+                        } else if (url.includes('.mp3') || url.includes('.wav') || url.includes('.flac')) {
+                            currentTrack.type = 'AUDIO';
+                        } else {
+                            currentTrack.type = 'HTTP Stream';
+                        }
+                        
+                        tracks.push(currentTrack);
+                        currentTrack = null;
+                    }
+                }
+
+                console.log(`M3U parsing: ${tracks.length} channels found`);
+                return tracks;
+            }
+            
             function initAudioAnalyser() {
                 try {
                     audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -889,6 +1005,7 @@
                     const bufferLength = analyser.frequencyBinCount;
                     dataArray = new Uint8Array(bufferLength);
                     
+                    // Créer les barres de visualisation
                     audioVisualizer.innerHTML = '';
                     for (let i = 0; i < bufferLength; i++) {
                         const bar = document.createElement('div');
@@ -961,11 +1078,7 @@
             }
             
             function updateNetworkInfo() {
-                networkInfo.textContent = `
-                    BW: ${networkStats.bandwidth} kbps | 
-                    FPS: ${networkStats.fps} | 
-                    Res: ${networkStats.resolution}
-                `;
+                networkInfo.textContent = `BW: ${networkStats.bandwidth} kbps | FPS: ${networkStats.fps} | Res: ${networkStats.resolution}`;
             }
             
             function toggleQualityMenu() {
@@ -1029,12 +1142,18 @@
                     const reader = new FileReader();
                     reader.onload = function(e) {
                         const content = e.target.result;
-                        const tracks = parseM3UPlaylist(content);
+                        const fileUrl = URL.createObjectURL(file);
+                        const tracks = parseM3UContent(content, fileUrl);
                         
                         if (tracks.length > 0) {
-                            loadPlaylist(tracks);
+                            playlist = tracks;
+                            currentIndex = 0;
+                            updatePlaylistDisplay();
+                            if (playlist.length > 0) {
+                                play();
+                            }
                         } else {
-                            const fileUrl = URL.createObjectURL(file);
+                            // Fallback: traiter comme une seule piste
                             addToPlaylist({
                                 name: displayName,
                                 url: fileUrl,
@@ -1050,11 +1169,15 @@
                         try {
                             const content = JSON.parse(e.target.result);
                             if (Array.isArray(content)) {
-                                const cleanedPlaylist = content.map(item => ({
+                                playlist = content.map(item => ({
                                     ...item,
                                     name: item.name.replace(/\.[^/.]+$/, "")
                                 }));
-                                loadPlaylist(cleanedPlaylist);
+                                currentIndex = 0;
+                                updatePlaylistDisplay();
+                                if (playlist.length > 0) {
+                                    play();
+                                }
                             } else {
                                 alert("Invalid playlist format. Expected an array of tracks.");
                             }
@@ -1086,52 +1209,11 @@
                 }
             }
 
-            function parseM3UPlaylist(content) {
-                const lines = content.split('\n');
-                const tracks = [];
-                let currentTrack = null;
-
-                for (const line of lines) {
-                    const trimmed = line.trim();
-                    
-                    if (trimmed.startsWith('#EXTINF:')) {
-                        const durationMatch = trimmed.match(/#EXTINF:(-?\d+)/);
-                        const titleMatch = trimmed.match(/,(.*)$/);
-                        
-                        currentTrack = {
-                            name: titleMatch ? titleMatch[1].replace(/\.[^/.]+$/, "") : 'Unknown Track',
-                            duration: durationMatch ? parseInt(durationMatch[1]) : 0
-                        };
-                    } 
-                    else if (trimmed && !trimmed.startsWith('#') && currentTrack) {
-                        currentTrack.url = trimmed;
-                        const ext = trimmed.split('.').pop().toLowerCase();
-                        currentTrack.type = ext === 'm3u8' ? 'HLS' : 
-                                         ['mp4','mov','avi','mkv'].includes(ext) ? 'MP4' :
-                                         ['mp3','wav','flac'].includes(ext) ? ext.toUpperCase() : 'HTTP Stream';
-                        tracks.push(currentTrack);
-                        currentTrack = null;
-                    }
-                }
-
-                return tracks;
-            }
-            
             function addToPlaylist(track) {
                 playlist.push(track);
                 currentIndex = playlist.length - 1;
                 updatePlaylistDisplay();
                 play();
-            }
-            
-            function loadPlaylist(items) {
-                playlist = items;
-                currentIndex = 0;
-                updatePlaylistDisplay();
-                
-                if (playlist.length > 0) {
-                    play();
-                }
             }
             
             function updatePlaylistDisplay() {
@@ -1182,20 +1264,17 @@
 
             // PiP Functions
             async function togglePiP() {
-                // Check for PiP support first
                 if (!isPipSupported) {
                     alert("Your browser does not support Picture-in-Picture.");
                     return;
                 }
 
-                // PiP is only for video, not audio
                 if (isAudioMode) {
                     alert("Picture-in-Picture is only available for video content.");
                     return;
                 }
 
-                // Ensure the video has metadata loaded before requesting PiP
-                if (videoPlayer.readyState < 2) { // HAVE_CURRENT_DATA
+                if (videoPlayer.readyState < 2) {
                     alert("Please wait for the video to load before activating Picture-in-Picture.");
                     return;
                 }
@@ -1204,18 +1283,17 @@
                     if (document.pictureInPictureElement) {
                         await document.exitPictureInPicture();
                     } else {
-                        // A user gesture is required, so this must be called from a click handler
                         await videoPlayer.requestPictureInPicture();
                     }
                 } catch (error) {
                     console.error('PiP Error:', error);
                     let errorMessage = "Picture-in-Picture failed.";
                     if (error.name === 'NotAllowedError') {
-                        errorMessage = "PiP permission denied. It may require a user interaction or be blocked by browser settings.";
+                        errorMessage = "PiP permission denied.";
                     } else if (error.name === 'NotSupportedError') {
                         errorMessage = "Your browser or this video does not support Picture-in-Picture.";
                     } else if (error.name === 'InvalidStateError') {
-                        errorMessage = "The video is not in a valid state for PiP (e.g., no source loaded).";
+                        errorMessage = "The video is not in a valid state for PiP.";
                     }
                     alert(errorMessage);
                 }
@@ -1260,13 +1338,13 @@
                 videoPlayer.removeEventListener('error', handleVideoError);
                 audioPlayer.removeEventListener('error', handleAudioError);
 
-                const isAudio = ['MP3', 'WAV', 'FLAC'].includes(track.type);
+                const isAudio = ['MP3', 'WAV', 'FLAC', 'AUDIO'].includes(track.type);
                 isAudioMode = isAudio;
                 
-                // Update PiP button state based on content type and browser support
+                // Update PiP button state
                 pipBtn.disabled = isAudioMode || !isPipSupported;
                 pipBtn.title = isAudioMode ? "PiP is for video content only" : 
-                                 isPipSupported ? "Enter Picture-in-Picture mode (draggable and resizable by OS)" :
+                                 isPipSupported ? "Enter Picture-in-Picture mode" :
                                  "Picture-in-Picture is not supported by your browser";
                 
                 showPlaceholder(`LOADING: ${track.name}`);
