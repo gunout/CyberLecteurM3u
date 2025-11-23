@@ -186,6 +186,11 @@
             cursor: not-allowed;
         }
 
+        .control-btn.active {
+            background-color: rgba(255, 0, 255, 0.2);
+            box-shadow: var(--glow-pink);
+        }
+
         .volume-container {
             display: flex;
             align-items: center;
@@ -598,7 +603,7 @@
         <div class="player-container" id="playerContainer">
             <div class="video-container">
                 <div class="video-placeholder pulse flicker" id="videoPlaceholder" style="display: flex;">CYBERPLAYER NEON<br>READY</div>
-                <video id="videoPlayer" playsinline="" disablepictureinpicture="" style="display: none;"></video>
+                <video id="videoPlayer" playsinline style="display: none;"></video>
                 <audio id="audioPlayer" src=""></audio>
                 <div class="audio-visualizer" id="audioVisualizer" style="display: none;"></div>
                 <div class="network-info" id="networkInfo" style="display: none;">
@@ -617,7 +622,7 @@
                     <button class="control-btn" id="prevBtn">PREV</button>
                     <button class="control-btn" id="nextBtn">NEXT</button>
                     <button class="control-btn pink" id="fullscreenBtn">FULL</button>
-                    <button class="control-btn pink" id="pipBtn" title="Picture-in-Picture" disabled>PIP</button>
+                    <button class="control-btn pink" id="pipBtn" title="Picture-in-Picture">PIP</button>
                     
                     <div class="volume-container">
                         <span class="volume-label">VOL</span>
@@ -735,16 +740,23 @@
                 resolution: 'N/A'
             };
             let statsInterval;
-            const isPipSupported = 'pictureInPictureEnabled' in document;
+            
+            // Vérification du support PiP
+            const isPipSupported = document.pictureInPictureEnabled;
             
             // Initialisation
             initPlayer();
             
             function initPlayer() {
-                // PiP setup
+                // PiP setup - Correction importante
                 if (!isPipSupported) {
                     pipBtn.disabled = true;
                     pipBtn.title = "Picture-in-Picture is not supported by your browser";
+                } else {
+                    // S'assurer que l'attribut disablePictureInPicture n'est pas présent
+                    videoPlayer.removeAttribute('disablePictureInPicture');
+                    pipBtn.disabled = false;
+                    pipBtn.title = "Toggle Picture-in-Picture mode";
                 }
 
                 // Configurer les écouteurs d'événements
@@ -778,6 +790,9 @@
                     updatePlaylistDisplay();
                     hidePlaceholder();
                     startStatsMonitoring();
+                    
+                    // Mettre à jour l'état PiP quand la vidéo commence à jouer
+                    updatePipButtonState();
                 });
                 
                 audioPlayer.addEventListener('play', () => {
@@ -811,9 +826,13 @@
                     nextTrack();
                 });
 
-                // PiP event listeners
+                // Événements PiP améliorés
                 videoPlayer.addEventListener('enterpictureinpicture', onEnterPip);
                 videoPlayer.addEventListener('leavepictureinpicture', onLeavePip);
+                
+                // Événements pour détecter quand la vidéo est prête pour PiP
+                videoPlayer.addEventListener('loadedmetadata', updatePipButtonState);
+                videoPlayer.addEventListener('canplay', updatePipButtonState);
                 
                 // Gestion du chargement de fichiers
                 fileInput.addEventListener('change', handleFileSelect);
@@ -884,7 +903,31 @@
                 }
             }
             
-            // Nouvelle fonction pour charger M3U depuis URL
+            // Nouvelle fonction pour mettre à jour l'état du bouton PiP
+            function updatePipButtonState() {
+                if (!isPipSupported) {
+                    pipBtn.disabled = true;
+                    return;
+                }
+                
+                // PiP n'est disponible que pour le contenu vidéo (pas audio)
+                pipBtn.disabled = isAudioMode || 
+                                 videoPlayer.readyState < 2 || // Pas assez de données chargées
+                                 !videoPlayer.videoWidth || // Pas de dimensions vidéo
+                                 videoPlayer.duration === Infinity; // Stream en direct
+                
+                if (pipBtn.disabled) {
+                    pipBtn.title = isAudioMode ? 
+                        "PiP is for video content only" : 
+                        "Video not ready for Picture-in-Picture";
+                } else {
+                    pipBtn.title = document.pictureInPictureElement ? 
+                        "Exit Picture-in-Picture" : 
+                        "Enter Picture-in-Picture";
+                }
+            }
+            
+            // Fonction pour charger M3U depuis URL
             function loadM3UFromURL(url, playlistName) {
                 showPlaceholder(`LOADING M3U: ${playlistName}`);
                 
@@ -1262,7 +1305,7 @@
                 }
             }
 
-            // PiP Functions
+            // Fonctions PiP améliorées
             async function togglePiP() {
                 if (!isPipSupported) {
                     alert("Your browser does not support Picture-in-Picture.");
@@ -1274,26 +1317,27 @@
                     return;
                 }
 
-                if (videoPlayer.readyState < 2) {
-                    alert("Please wait for the video to load before activating Picture-in-Picture.");
-                    return;
-                }
-
                 try {
                     if (document.pictureInPictureElement) {
                         await document.exitPictureInPicture();
                     } else {
+                        // S'assurer que la vidéo est prête pour PiP
+                        if (videoPlayer.readyState < 2) {
+                            alert("Please wait for the video to load before activating Picture-in-Picture.");
+                            return;
+                        }
+                        
                         await videoPlayer.requestPictureInPicture();
                     }
                 } catch (error) {
                     console.error('PiP Error:', error);
                     let errorMessage = "Picture-in-Picture failed.";
                     if (error.name === 'NotAllowedError') {
-                        errorMessage = "PiP permission denied.";
+                        errorMessage = "PiP permission denied. It may require a user interaction or be blocked by browser settings.";
                     } else if (error.name === 'NotSupportedError') {
                         errorMessage = "Your browser or this video does not support Picture-in-Picture.";
                     } else if (error.name === 'InvalidStateError') {
-                        errorMessage = "The video is not in a valid state for PiP.";
+                        errorMessage = "The video is not in a valid state for PiP (e.g., no source loaded).";
                     }
                     alert(errorMessage);
                 }
@@ -1341,17 +1385,19 @@
                 const isAudio = ['MP3', 'WAV', 'FLAC', 'AUDIO'].includes(track.type);
                 isAudioMode = isAudio;
                 
-                // Update PiP button state
-                pipBtn.disabled = isAudioMode || !isPipSupported;
-                pipBtn.title = isAudioMode ? "PiP is for video content only" : 
-                                 isPipSupported ? "Enter Picture-in-Picture mode" :
-                                 "Picture-in-Picture is not supported by your browser";
+                // Mettre à jour l'état PiP
+                updatePipButtonState();
                 
                 showPlaceholder(`LOADING: ${track.name}`);
                 videoPlaceholder.classList.add('pulse');
 
                 if (track.type === "HLS" && Hls.isSupported()) {
-                    hls = new Hls();
+                    hls = new Hls({
+                        enableWorker: true,
+                        lowLatencyMode: true,
+                        backBufferLength: 90
+                    });
+                    
                     hls.loadSource(track.url);
                     hls.attachMedia(videoPlayer);
                     
@@ -1360,6 +1406,8 @@
                         videoPlayer.play()
                             .then(() => {
                                 videoPlaceholder.classList.remove('pulse');
+                                // Mettre à jour PiP après que la vidéo soit prête
+                                setTimeout(updatePipButtonState, 500);
                             })
                             .catch(error => {
                                 console.error("HLS video play() error:", error);
@@ -1414,6 +1462,8 @@
                         .then(() => {
                             videoPlaceholder.classList.remove('pulse');
                             startStatsMonitoring();
+                            // Mettre à jour PiP après que la vidéo soit prête
+                            setTimeout(updatePipButtonState, 500);
                         })
                         .catch(error => {
                             console.error("Video playback error (standard):", error);
@@ -1544,6 +1594,11 @@
                 isPlaying = false;
                 showPlaceholder("CYBERPLAYER NEON<br>READY");
                 updatePlaylistDisplay();
+                
+                // Quitter le mode PiP si actif
+                if (document.pictureInPictureElement) {
+                    document.exitPictureInPicture().catch(() => {});
+                }
             }
             
             function prevTrack() {
