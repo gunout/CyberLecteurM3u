@@ -5,24 +5,27 @@ https://exofmreunion.ice.infomaniak.ch/exofmreunion-64.aac
 http://direct.francebleu.fr/live/fbcreuse-midfi.mp3
 #EXTINF:0,3.Freedom1
 http://freedomice.streamakaci.com/freedom.mp3
-#EXTINF:0,4.KreolFm
+#EXTINF:0,4.Freedom2
+http://freedomice.streamakaci.com/freedom2.mp3
+#EXTINF:0,5.KreolFm
 http://kreolfm.ice.infomaniak.ch/kreolfm-96.aac
-#EXTINF:0,5.NeoFm
+#EXTINF:0,6.NeoFm
 http://neofming.streamakaci.com/neofm.mp3
-#EXTINF:0,6.Reunion1ere
+#EXTINF:0,7.Reunion1ere
 https://reunion.ice.infomaniak.ch/reunion-128.mp3
-#EXTINF:0,7.Skyrock 
+#EXTINF:0,8.Skyrock 
 http://icecast.skyrock.net/s/natio_mp3_128k
-#EXTINF:0,8.Generation Tv
+#EXTINF:0,9.Generation Tv
 https://edge11.vedge.infomaniak.com/livecast/ik:generation-tv/manifest.m3u8
-#EXTINF:0,9.Urban Hit Reunion
+#EXTINF:0,10.Urban Hit Reunion
 https://listen.radioking.com/radio/400111/stream/452236
-#EXTINF:0,10.Gleaphe Radio
+#EXTINF:0,11.Gleaphe Radio
 https://gradio-gleaphe.duckdns.org/radio/stream
-#EXTINF:0,11.Radio Pikan
+#EXTINF:0,12.Radio Pikan
 https://stream4.vestaradio.com/RADIOPIKAN?nocache=89908
-#EXTINF:0,12.Antenne Reunion Radio 
+#EXTINF:0,13.Antenne Reunion Radio 
 https://rtlre.ice.infomaniak.ch/rtlre-64.aac
-#EXTINF:0,13.Antenne Reunion Tv 
+#EXTINF:0,14.Antenne Reunion Tv 
 https://live-antenne-reunion.zeop.tv/live/c3eds/antreunihd/hls_fta/antreunihd.m3u8?location=ZEOP01
+
 
