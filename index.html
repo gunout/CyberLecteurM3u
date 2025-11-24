@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CyberPlayer Neon - Radio Outre-Mer</title>
+    <title>CyberPlayer Neon - TV & Radio Outre-Mer</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
         :root {
@@ -643,7 +643,7 @@
     <div class="container">
         <div class="player-container" id="playerContainer">
             <div class="video-container">
-                <div class="video-placeholder pulse flicker" id="videoPlaceholder" style="display: flex;">CYBERPLAYER NEON<br>RADIO OUTRE-MER</div>
+                <div class="video-placeholder pulse flicker" id="videoPlaceholder" style="display: flex;">CYBERPLAYER NEON<br>TV & RADIO OUTRE-MER</div>
                 <video id="videoPlayer" playsinline style="display: none;"></video>
                 <audio id="audioPlayer" src="" crossorigin="anonymous"></audio>
                 <div class="audio-visualizer" id="audioVisualizer" style="display: none;"></div>
@@ -710,8 +710,8 @@
 
         <div class="playlist-container">
             <div class="playlist-header">
-                <span>STATION</span>
-                <span>STATUS</span>
+                <span>CHAÎNE</span>
+                <span>TYPE</span>
             </div>
             <ul class="playlist" id="playlist"></ul>
         </div>
@@ -806,34 +806,8 @@
             // Vérification du support PiP
             const isPipSupported = document.pictureInPictureEnabled;
             
-            // Outre-Mer M3U playlist content - URLs mises à jour et testées
-            const outremerM3UContent = `#EXTM3U
-#EXTINF:0,1.Exofm
-https://exofmreunion.ice.infomaniak.ch/exofmreunion-64.aac
-#EXTINF:0,2.France Bleu Creuse
-http://direct.francebleu.fr/live/fbcreuse-midfi.mp3
-#EXTINF:0,3.Freedom1
-http://freedomice.streamakaci.com/freedom.mp3
-#EXTINF:0,4.KreolFm
-http://kreolfm.ice.infomaniak.ch/kreolfm-96.aac
-#EXTINF:0,5.NeoFm
-http://neofming.streamakaci.com/neofm.mp3
-#EXTINF:0,6.Reunion1ere
-https://reunion.ice.infomaniak.ch/reunion-128.mp3
-#EXTINF:0,7.Skyrock 
-http://icecast.skyrock.net/s/natio_mp3_128k
-#EXTINF:0,8.Generation Tv
-https://edge11.vedge.infomaniak.com/livecast/ik:generation-tv/manifest.m3u8
-#EXTINF:0,9.Urban Hit Reunion
-https://listen.radioking.com/radio/400111/stream/452236
-#EXTINF:0,10.Gleaphe Radio
-https://gradio-gleaphe.duckdns.org/radio/stream
-#EXTINF:0,11.Radio Pikan
-https://stream4.vestaradio.com/RADIOPIKAN?nocache=89908
-#EXTINF:0,12.Antenne Reunion Radio 
-https://rtlre.ice.infomaniak.ch/rtlre-64.aac
-#EXTINF:0,13.Antenne Reunion Tv 
-https://live-antenne-reunion.zeop.tv/live/c3eds/antreunihd/hls_fta/antreunihd.m3u8?location=ZEOP01`;
+            // URL de la playlist Outre-Mer mise à jour
+            const OUTREMER_M3U_URL = 'https://raw.githubusercontent.com/gunout/CyberLecteurM3u/refs/heads/main/Bonus/outremer.m3u';
             
             // Initialisation
             initPlayer();
@@ -1028,27 +1002,40 @@ https://live-antenne-reunion.zeop.tv/live/c3eds/antreunihd/hls_fta/antreunihd.m3
                 }, 500);
             }
             
-            // Fonction pour charger la playlist Outre-Mer
+            // Fonction pour charger la playlist Outre-Mer depuis l'URL
             function loadOutremerM3U() {
                 showPlaceholder("CHARGEMENT PLAYLIST OUTRE-MER...");
                 
-                const tracks = parseM3UContent(outremerM3UContent, '');
-                
-                if (tracks.length > 0) {
-                    playlist = tracks;
-                    currentIndex = 0;
-                    updatePlaylistDisplay();
-                    showPlaceholder(`PLAYLIST OUTREMER CHARGÉE<br>${tracks.length} STATIONS DISPONIBLES<br>Cliquez sur PLAY pour commencer`);
-                    
-                    // Ne pas démarrer automatiquement, attendre l'action utilisateur
-                    setTimeout(() => {
-                        if (!userInteracted) {
-                            showPlaceholder(`PLAYLIST OUTREMER CHARGÉE<br>${tracks.length} STATIONS DISPONIBLES<br>Cliquez sur PLAY pour commencer`);
+                fetch(OUTREMER_M3U_URL)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
                         }
-                    }, 2000);
-                } else {
-                    showPlaceholder("ERREUR: AUCUNE STATION TROUVÉE");
-                }
+                        return response.text();
+                    })
+                    .then(m3uContent => {
+                        const tracks = parseM3UContent(m3uContent, OUTREMER_M3U_URL);
+                        
+                        if (tracks.length > 0) {
+                            playlist = tracks;
+                            currentIndex = 0;
+                            updatePlaylistDisplay();
+                            showPlaceholder(`PLAYLIST OUTREMER CHARGÉE<br>${tracks.length} CHAÎNES DISPONIBLES<br>Cliquez sur PLAY pour commencer`);
+                            
+                            // Ne pas démarrer automatiquement, attendre l'action utilisateur
+                            setTimeout(() => {
+                                if (!userInteracted) {
+                                    showPlaceholder(`PLAYLIST OUTREMER CHARGÉE<br>${tracks.length} CHAÎNES DISPONIBLES<br>Cliquez sur PLAY pour commencer`);
+                                }
+                            }, 2000);
+                        } else {
+                            showPlaceholder("ERREUR: AUCUNE CHAÎNE TROUVÉE");
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Erreur lors du chargement de la playlist Outre-Mer:", error);
+                        showPlaceholder(`ERREUR DE CHARGEMENT<br>${error.message}`);
+                    });
             }
             
             // Fonction pour détecter le type de média
@@ -1165,7 +1152,7 @@ https://live-antenne-reunion.zeop.tv/live/c3eds/antreunihd/hls_fta/antreunihd.m3
                         } else if (!url.startsWith('http') && !url.startsWith('https')) {
                             const base = new URL(baseUrl);
                             const pathParts = base.pathname.split('/');
-                            pathParts.pop(); // Remove the m3u filename
+                            pathParts.pop(); // Remove m3u filename
                             const basePath = pathParts.join('/');
                             url = base.origin + basePath + '/' + url;
                         }
@@ -1489,7 +1476,7 @@ https://live-antenne-reunion.zeop.tv/live/c3eds/antreunihd/hls_fta/antreunihd.m3
                     } else {
                         // S'assurer que la vidéo est prête pour PiP
                         if (videoPlayer.readyState < 2) {
-                            alert("Please wait for the video to load before activating Picture-in-Picture.");
+                            alert("Please wait for video to load before activating Picture-in-Picture.");
                             return;
                         }
                         
