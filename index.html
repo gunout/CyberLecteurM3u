@@ -415,13 +415,6 @@
             font-family: 'Courier New', monospace;
         }
 
-        .signature:hover {
-            opacity: 1;
-            text-shadow: 0 0 10px var(--neon-pink), 
-                         0 0 20px var(--neon-pink), 
-                         0 0 30px var(--neon-pink);
-        }
-
         .copyright {
             position: fixed;
             bottom: 25px;
@@ -1541,33 +1534,9 @@
                     audioPlayer.src = track.url;
                     audioPlayer.playbackRate = playbackRate;
                     audioPlayer.addEventListener('error', handleAudioError);
-                    audioPlayer.play()
-                        .then(() => {
-                            videoPlaceholder.classList.remove('pulse');
-                            if (audioContext && audioSource) {
-                                audioSource.disconnect();
-                            }
-                            try {
-                                audioSource = audioContext.createMediaElementSource(audioPlayer);
-                                audioSource.connect(analyser);
-                                analyser.connect(audioContext.destination);
-                            } catch (e) {
-                                console.warn("Audio context not available:", e);
-                            }
-                        })
-                        .catch(error => {
-                            console.error("Audio playback error:", error);
-                            // Essayer de contourner les restrictions CORS pour les streams audio
-                            if (error.name === 'NotAllowedError' || error.message.includes('CORS')) {
-                                console.log("Trying to bypass CORS for audio stream...");
-                                // Créer un proxy simple via fetch
-                                fetchAudioStream(track.url);
-                            } else {
-                                showPlaceholder(`ERROR: Cannot play ${track.name}<br>${error.message}`);
-                                isPlaying = false;
-                                updatePlaylistDisplay();
-                            }
-                        });
+                    
+                    // Essayer différentes méthodes pour contourner les restrictions
+                    playAudioWithFallback(track);
                 } else {
                     // Pour les autres types de contenu (vidéo standard)
                     videoPlayer.src = track.url;
@@ -1598,12 +1567,113 @@
                 }
             }
             
-            // Fonction pour contourner les restrictions CORS pour les streams audio
-            function fetchAudioStream(url) {
-                showPlaceholder(`LOADING STREAM: ${playlist[currentIndex]?.name || ''}<br>(Bypassing CORS...)`);
+            // Nouvelle fonction améliorée pour la lecture audio avec fallbacks
+            function playAudioWithFallback(track) {
+                // Essayer la lecture directe d'abord
+                audioPlayer.play()
+                    .then(() => {
+                        videoPlaceholder.classList.remove('pulse');
+                        if (audioContext && audioSource) {
+                            audioSource.disconnect();
+                        }
+                        try {
+                            audioSource = audioContext.createMediaElementSource(audioPlayer);
+                            audioSource.connect(analyser);
+                            analyser.connect(audioContext.destination);
+                        } catch (e) {
+                            console.warn("Audio context not available:", e);
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Audio playback error:", error);
+                        
+                        // Essayer différentes méthodes de contournement
+                        if (error.name === 'NotAllowedError' || error.message.includes('CORS')) {
+                            console.log("Trying CORS proxy for audio stream...");
+                            tryCorsProxy(track);
+                        } else if (error.name === 'NotSupportedError') {
+                            // Format non supporté, essayer avec un type MIME différent
+                            console.log("Trying with different MIME type...");
+                            tryDifferentMimeType(track);
+                        } else {
+                            showPlaceholder(`ERROR: Cannot play ${track.name}<br>${error.message}`);
+                            isPlaying = false;
+                            updatePlaylistDisplay();
+                        }
+                    });
+            }
+            
+            // Essayer un proxy CORS
+            function tryCorsProxy(track) {
+                showPlaceholder(`LOADING: ${track.name}<br>(Using CORS proxy...)`);
                 
-                // Créer un proxy simple via fetch
-                fetch(url)
+                // Utiliser un proxy CORS public
+                const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+                const proxiedUrl = proxyUrl + track.url;
+                
+                audioPlayer.src = proxiedUrl;
+                audioPlayer.play()
+                    .then(() => {
+                        videoPlaceholder.classList.remove('pulse');
+                        if (audioContext && audioSource) {
+                            audioSource.disconnect();
+                        }
+                        try {
+                            audioSource = audioContext.createMediaElementSource(audioPlayer);
+                            audioSource.connect(analyser);
+                            analyser.connect(audioContext.destination);
+                        } catch (e) {
+                            console.warn("Audio context not available:", e);
+                        }
+                    })
+                    .catch(error => {
+                        console.error("CORS proxy also failed:", error);
+                        // Essayer une méthode de fetch
+                        tryFetchMethod(track);
+                    });
+            }
+            
+            // Essayer avec un type MIME différent
+            function tryDifferentMimeType(track) {
+                showPlaceholder(`LOADING: ${track.name}<br>(Trying different format...)`);
+                
+                // Créer un nouvel élément audio avec des attributs différents
+                const tempAudio = new Audio();
+                tempAudio.src = track.url;
+                tempAudio.type = 'audio/mpeg'; // Forcer le type MP3
+                
+                tempAudio.play()
+                    .then(() => {
+                        // Si ça marche, utiliser cet élément
+                        audioPlayer.src = track.url;
+                        audioPlayer.play()
+                            .then(() => {
+                                videoPlaceholder.classList.remove('pulse');
+                                if (audioContext && audioSource) {
+                                    audioSource.disconnect();
+                                }
+                                try {
+                                    audioSource = audioContext.createMediaElementSource(audioPlayer);
+                                    audioSource.connect(analyser);
+                                    analyser.connect(audioContext.destination);
+                                } catch (e) {
+                                    console.warn("Audio context not available:", e);
+                                }
+                            });
+                    })
+                    .catch(error => {
+                        console.error("Different MIME type also failed:", error);
+                        showPlaceholder(`ERROR: Cannot play ${track.name}<br>Format not supported`);
+                        isPlaying = false;
+                        updatePlaylistDisplay();
+                    });
+            }
+            
+            // Méthode de fetch comme dernier recours
+            function tryFetchMethod(track) {
+                showPlaceholder(`LOADING: ${track.name}<br>(Trying fetch method...)`);
+                
+                fetch(track.url)
                     .then(response => {
                         if (!response.ok) throw new Error('Network response was not ok');
                         return response.blob();
@@ -1611,7 +1681,6 @@
                     .then(blob => {
                         const blobUrl = URL.createObjectURL(blob);
                         audioPlayer.src = blobUrl;
-                        audioPlayer.playbackRate = playbackRate;
                         return audioPlayer.play();
                     })
                     .then(() => {
@@ -1628,8 +1697,8 @@
                         }
                     })
                     .catch(error => {
-                        console.error("Failed to fetch audio stream:", error);
-                        showPlaceholder(`ERROR: Cannot play ${playlist[currentIndex]?.name || ''}<br>Stream not accessible`);
+                        console.error("Fetch method also failed:", error);
+                        showPlaceholder(`ERROR: Cannot play ${track.name}<br>All methods failed`);
                         isPlaying = false;
                         updatePlaylistDisplay();
                     });
