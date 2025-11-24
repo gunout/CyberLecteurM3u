@@ -15,6 +15,8 @@
             --text-color: #ffffff;
             --glow-blue: 0 0 10px #0ff0fc, 0 0 20px #0ff0fc, 0 0 30px #0ff0fc;
             --glow-pink: 0 0 10px #ff00ff, 0 0 20px #ff00ff, 0 0 30px #ff00ff;
+            --glow-cyan: 0 0 10px #00f0ff, 0 0 20px #00f0ff, 0 0 30px #00f0ff;
+            --glow-white: 0 0 10px #ffffff, 0 0 20px #ffffff, 0 0 30px #ffffff;
         }
 
         * {
@@ -381,24 +383,76 @@
             font-size: 10px;
         }
 
-        .audio-visualizer {
+        /* Styles pour le visualiseur personnalisé */
+        .custom-visualizer {
             position: absolute;
-            bottom: 0;
+            top: 0;
             left: 0;
             width: 100%;
-            height: 40px;
+            height: 100%;
             display: flex;
-            align-items: flex-end;
+            align-items: center;
             justify-content: center;
-            gap: 2px;
             z-index: 2;
         }
 
-        .audio-bar {
-            width: 3px;
-            background: var(--neon-cyan);
-            box-shadow: 0 0 5px var(--neon-cyan);
-            transition: height 0.1s ease;
+        .doggg-image {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            height: 240px;
+            width: auto;
+            z-index: 1;
+            filter: drop-shadow(5 5 5px var(--neon-cyan));
+            transition: filter 0.3s ease;
+            display: block;
+            opacity: 1;
+        }
+
+        .doggg-image.active {
+            filter: drop-shadow(5 5 15px var(--neon-pink));
+        }
+
+        .halftone-bar {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            z-index: 3;
+            padding: 0 20px;
+        }
+
+        .halftone-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            opacity: 0.6;
+            transition: all 0.15s ease;
+        }
+
+        .halftone-dot.cyan {
+            background-color: var(--neon-cyan);
+            box-shadow: var(--glow-cyan);
+        }
+
+        .halftone-dot.pink {
+            background-color: var(--neon-pink);
+            box-shadow: var(--glow-pink);
+        }
+
+        .halftone-dot.white {
+            background-color: #ffffff;
+            box-shadow: var(--glow-white);
+        }
+
+        .halftone-dot.active {
+            opacity: 1;
+            transform: scale(1.8);
         }
 
         .audio-mode .video-placeholder {
@@ -614,6 +668,20 @@
                 font-size: 9px;
                 padding: 4px 6px;
             }
+            
+            .doggg-image {
+                height: 160px;
+            }
+            
+            .halftone-dot {
+                width: 6px;
+                height: 6px;
+            }
+            
+            .halftone-bar {
+                gap: 6px;
+                padding: 0 15px;
+            }
         }
 
         @media (max-width: 480px) {
@@ -623,6 +691,20 @@
             
             .playlist-container {
                 height: 35vh;
+            }
+            
+            .doggg-image {
+                height: 120px;
+            }
+            
+            .halftone-dot {
+                width: 5px;
+                height: 5px;
+            }
+            
+            .halftone-bar {
+                gap: 4px;
+                padding: 0 10px;
             }
         }
 
@@ -646,7 +728,13 @@
                 <div class="video-placeholder pulse flicker" id="videoPlaceholder" style="display: flex;">CYBERPLAYER NEON<br>TV & RADIO OUTRE-MER</div>
                 <video id="videoPlayer" playsinline style="display: none;"></video>
                 <audio id="audioPlayer" src="" crossorigin="anonymous"></audio>
-                <div class="audio-visualizer" id="audioVisualizer" style="display: none;"></div>
+                
+                <!-- Nouveau visualiseur personnalisé -->
+                <div class="custom-visualizer" id="customVisualizer" style="display: none;">
+                    <img src="https://raw.githubusercontent.com/gunout/CyberLecteurM3u/main/doggg.png" alt="Doggg" class="doggg-image" id="dogggImage" onerror="this.style.display='none'; console.error('Image failed to load');">
+                    <div class="halftone-bar" id="halftoneBar"></div>
+                </div>
+                
                 <div class="network-info" id="networkInfo" style="display: none;">
                     BW: 0 kbps | 
                     FPS: 0 | 
@@ -769,7 +857,9 @@
             const loadUrlBtn = document.getElementById('loadUrlBtn');
             const loadOutremerBtn = document.getElementById('loadOutremerBtn');
             const cancelLoadBtn = document.getElementById('cancelLoadBtn');
-            const audioVisualizer = document.getElementById('audioVisualizer');
+            const customVisualizer = document.getElementById('customVisualizer');
+            const dogggImage = document.getElementById('dogggImage');
+            const halftoneBar = document.getElementById('halftoneBar');
             const playerContainer = document.getElementById('playerContainer');
             const networkInfo = document.getElementById('networkInfo');
             const radioInfo = document.getElementById('radioInfo');
@@ -802,6 +892,7 @@
             let pipSize = 1.0;
             let isPipMode = false;
             let userInteracted = false;
+            let dots = [];
             
             // Vérification du support PiP
             const isPipSupported = document.pictureInPictureEnabled;
@@ -822,6 +913,9 @@
                     pipBtn.disabled = false;
                     pipBtn.title = "Toggle Picture-in-Picture mode";
                 }
+
+                // Créer la barre halftone horizontale
+                createHalftoneBar();
 
                 // Configurer les écouteurs d'événements
                 playBtn.addEventListener('click', play);
@@ -1002,6 +1096,22 @@
                 }, 500);
             }
             
+            // Fonction pour créer la barre halftone horizontale
+            function createHalftoneBar() {
+                const dotCount = window.innerWidth > 768 ? 25 : (window.innerWidth > 480 ? 20 : 15);
+                halftoneBar.innerHTML = '';
+                
+                const colors = ['cyan', 'pink', 'white'];
+                
+                for (let i = 0; i < dotCount; i++) {
+                    const dot = document.createElement('div');
+                    const colorClass = colors[Math.floor(Math.random() * colors.length)];
+                    dot.className = `halftone-dot ${colorClass}`;
+                    halftoneBar.appendChild(dot);
+                    dots.push(dot);
+                }
+            }
+            
             // Fonction pour charger la playlist Outre-Mer depuis l'URL
             function loadOutremerM3U() {
                 showPlaceholder("CHARGEMENT PLAYLIST OUTRE-MER...");
@@ -1175,35 +1285,73 @@
                 try {
                     audioContext = new (window.AudioContext || window.webkitAudioContext)();
                     analyser = audioContext.createAnalyser();
-                    analyser.fftSize = 64;
+                    analyser.fftSize = 256;
                     
                     const bufferLength = analyser.frequencyBinCount;
                     dataArray = new Uint8Array(bufferLength);
-                    
-                    // Créer les barres de visualisation
-                    audioVisualizer.innerHTML = '';
-                    for (let i = 0; i < bufferLength; i++) {
-                        const bar = document.createElement('div');
-                        bar.className = 'audio-bar';
-                        audioVisualizer.appendChild(bar);
-                    }
                 } catch (e) {
                     console.error("AudioContext error:", e);
-                    audioVisualizer.style.display = 'none';
                 }
             }
             
             function visualizeAudio() {
                 if (!analyser) return;
                 
-                const bars = audioVisualizer.querySelectorAll('.audio-bar');
                 analyser.getByteFrequencyData(dataArray);
                 
-                for (let i = 0; i < bars.length; i++) {
-                    const value = dataArray[i];
-                    const height = value / 2;
-                    bars[i].style.height = `${height}px`;
-                    bars[i].style.opacity = `${0.1 + (value / 255)}`;
+                // Animer les points en fonction des données audio
+                const totalDots = dots.length;
+                const step = Math.floor(dataArray.length / totalDots);
+                
+                // Calculer l'intensité moyenne
+                let avgIntensity = 0;
+                for (let i = 0; i < totalDots; i++) {
+                    avgIntensity += dataArray[i * step];
+                }
+                avgIntensity = avgIntensity / totalDots / 255;
+                
+                // Mettre à jour l'image en fonction de l'intensité globale
+                if (avgIntensity > 0.4) {
+                    dogggImage.classList.add('active');
+                } else {
+                    dogggImage.classList.remove('active');
+                }
+                
+                // Animer la barre halftone
+                for (let i = 0; i < totalDots; i++) {
+                    const value = dataArray[i * step];
+                    const intensity = value / 255;
+                    
+                    // Calculer la distance depuis le centre de la barre
+                    const centerIndex = totalDots / 2;
+                    const distanceFromCenter = Math.abs(i - centerIndex) / centerIndex;
+                    
+                    // Ajuster l'intensité en fonction de la distance (effet de vague)
+                    const adjustedIntensity = intensity * (1 - distanceFromCenter * 0.3);
+                    
+                    // Appliquer l'effet en fonction de l'intensité ajustée
+                    if (adjustedIntensity > 0.25) {
+                        dots[i].classList.add('active');
+                        
+                        // Modifier la taille en fonction de l'intensité
+                        const scale = 1 + adjustedIntensity * 1.5;
+                        dots[i].style.transform = `scale(${scale})`;
+                        
+                        // Changer de couleur aléatoirement si l'intensité est élevée
+                        if (adjustedIntensity > 0.7 && Math.random() > 0.8) {
+                            const colors = ['cyan', 'pink', 'white'];
+                            const currentColor = colors.find(c => dots[i].classList.contains(c));
+                            const newColor = colors[Math.floor(Math.random() * colors.length)];
+                            
+                            if (currentColor) {
+                                dots[i].classList.remove(currentColor);
+                            }
+                            dots[i].classList.add(newColor);
+                        }
+                    } else {
+                        dots[i].classList.remove('active');
+                        dots[i].style.transform = 'scale(1)';
+                    }
                 }
                 
                 animationId = requestAnimationFrame(visualizeAudio);
@@ -1439,7 +1587,7 @@
                 videoPlaceholder.style.display = 'flex';
                 videoPlaceholder.classList.add('flicker');
                 videoPlayer.style.display = 'none';
-                audioVisualizer.style.display = 'none';
+                customVisualizer.style.display = 'none';
                 networkInfo.style.display = 'none';
                 radioInfo.style.display = 'none';
             }
@@ -1449,11 +1597,11 @@
                 videoPlaceholder.classList.remove('flicker');
                 if (isAudioMode) {
                     videoPlayer.style.display = 'none';
-                    audioVisualizer.style.display = 'flex';
+                    customVisualizer.style.display = 'flex';
                     networkInfo.style.display = 'none';
                 } else {
                     videoPlayer.style.display = 'block';
-                    audioVisualizer.style.display = 'none';
+                    customVisualizer.style.display = 'none';
                     networkInfo.style.display = 'block';
                 }
             }
