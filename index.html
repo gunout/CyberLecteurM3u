@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CyberPlayer Neon</title>
+    <title>CyberPlayer Neon - Radio Outre-Mer</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
         :root {
@@ -294,6 +294,11 @@
             text-shadow: 0 0 5px var(--neon-pink);
         }
 
+        .playlist li.error {
+            background-color: rgba(255, 0, 0, 0.1);
+            color: #ff6666;
+        }
+
         .playlist li span {
             flex: 1;
             overflow: hidden;
@@ -527,6 +532,29 @@
             z-index: 5;
         }
 
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        .status-indicator.playing {
+            background-color: #00ff00;
+            box-shadow: 0 0 5px #00ff00;
+        }
+
+        .status-indicator.error {
+            background-color: #ff0000;
+            box-shadow: 0 0 5px #ff0000;
+        }
+
+        .status-indicator.loading {
+            background-color: #ffff00;
+            box-shadow: 0 0 5px #ffff00;
+        }
+
         /* Responsive adjustments */
         @media (max-width: 768px) {
             .container {
@@ -615,9 +643,9 @@
     <div class="container">
         <div class="player-container" id="playerContainer">
             <div class="video-container">
-                <div class="video-placeholder pulse flicker" id="videoPlaceholder" style="display: flex;">CYBERPLAYER NEON<br>READY</div>
+                <div class="video-placeholder pulse flicker" id="videoPlaceholder" style="display: flex;">CYBERPLAYER NEON<br>RADIO OUTRE-MER</div>
                 <video id="videoPlayer" playsinline style="display: none;"></video>
-                <audio id="audioPlayer" src=""></audio>
+                <audio id="audioPlayer" src="" crossorigin="anonymous"></audio>
                 <div class="audio-visualizer" id="audioVisualizer" style="display: none;"></div>
                 <div class="network-info" id="networkInfo" style="display: none;">
                     BW: 0 kbps | 
@@ -682,8 +710,8 @@
 
         <div class="playlist-container">
             <div class="playlist-header">
-                <span>TRACK</span>
-                <span>TYPE</span>
+                <span>STATION</span>
+                <span>STATUS</span>
             </div>
             <ul class="playlist" id="playlist"></ul>
         </div>
@@ -773,9 +801,39 @@
             let statsInterval;
             let pipSize = 1.0;
             let isPipMode = false;
+            let userInteracted = false;
             
             // Vérification du support PiP
             const isPipSupported = document.pictureInPictureEnabled;
+            
+            // Outre-Mer M3U playlist content - URLs mises à jour et testées
+            const outremerM3UContent = `#EXTM3U
+#EXTINF:0,1.Exofm
+https://exofmreunion.ice.infomaniak.ch/exofmreunion-64.aac
+#EXTINF:0,2.France Bleu Creuse
+http://direct.francebleu.fr/live/fbcreuse-midfi.mp3
+#EXTINF:0,3.Freedom1
+http://freedomice.streamakaci.com/freedom.mp3
+#EXTINF:0,4.KreolFm
+http://kreolfm.ice.infomaniak.ch/kreolfm-96.aac
+#EXTINF:0,5.NeoFm
+http://neofming.streamakaci.com/neofm.mp3
+#EXTINF:0,6.Reunion1ere
+https://reunion.ice.infomaniak.ch/reunion-128.mp3
+#EXTINF:0,7.Skyrock 
+http://icecast.skyrock.net/s/natio_mp3_128k
+#EXTINF:0,8.Generation Tv
+https://edge11.vedge.infomaniak.com/livecast/ik:generation-tv/manifest.m3u8
+#EXTINF:0,9.Urban Hit Reunion
+https://listen.radioking.com/radio/400111/stream/452236
+#EXTINF:0,10.Gleaphe Radio
+https://gradio-gleaphe.duckdns.org/radio/stream
+#EXTINF:0,11.Radio Pikan
+https://stream4.vestaradio.com/RADIOPIKAN?nocache=89908
+#EXTINF:0,12.Antenne Reunion Radio 
+https://rtlre.ice.infomaniak.ch/rtlre-64.aac
+#EXTINF:0,13.Antenne Reunion Tv 
+https://live-antenne-reunion.zeop.tv/live/c3eds/antreunihd/hls_fta/antreunihd.m3u8?location=ZEOP01`;
             
             // Initialisation
             initPlayer();
@@ -843,6 +901,7 @@
                     hidePlaceholder();
                     visualizeAudio();
                     showRadioInfo();
+                    updateStationStatus(currentIndex, 'playing');
                 });
                 
                 videoPlayer.addEventListener('pause', () => {
@@ -860,6 +919,7 @@
                     showPlaceholder(`PAUSED: ${playlist[currentIndex]?.name || ''}`);
                     cancelAnimationFrame(animationId);
                     hideRadioInfo();
+                    updateStationStatus(currentIndex, 'paused');
                 });
                 
                 videoPlayer.addEventListener('ended', () => {
@@ -910,11 +970,20 @@
                 });
                 
                 loadOutremerBtn.addEventListener('click', () => {
-                    loadM3UFromURL('https://raw.githubusercontent.com/gunout/CyberLecteurM3u/main/Bonus/outremer.m3u', 'Outre-Mer Playlist');
+                    loadOutremerM3U();
                     hideLoadDialog();
                 });
                 
                 cancelLoadBtn.addEventListener('click', hideLoadDialog);
+                
+                // Détecter l'interaction utilisateur pour l'autoplay
+                document.addEventListener('click', () => {
+                    userInteracted = true;
+                }, { once: true });
+                
+                document.addEventListener('keydown', () => {
+                    userInteracted = true;
+                }, { once: true });
                 
                 // Détection du mouvement de la souris pour afficher les contrôles
                 let mouseMoveTimer;
@@ -952,6 +1021,34 @@
                         pipSizeMenu.classList.remove('show');
                     }
                 });
+                
+                // Charger automatiquement la playlist Outre-Mer au démarrage
+                setTimeout(() => {
+                    loadOutremerM3U();
+                }, 500);
+            }
+            
+            // Fonction pour charger la playlist Outre-Mer
+            function loadOutremerM3U() {
+                showPlaceholder("CHARGEMENT PLAYLIST OUTRE-MER...");
+                
+                const tracks = parseM3UContent(outremerM3UContent, '');
+                
+                if (tracks.length > 0) {
+                    playlist = tracks;
+                    currentIndex = 0;
+                    updatePlaylistDisplay();
+                    showPlaceholder(`PLAYLIST OUTREMER CHARGÉE<br>${tracks.length} STATIONS DISPONIBLES<br>Cliquez sur PLAY pour commencer`);
+                    
+                    // Ne pas démarrer automatiquement, attendre l'action utilisateur
+                    setTimeout(() => {
+                        if (!userInteracted) {
+                            showPlaceholder(`PLAYLIST OUTREMER CHARGÉE<br>${tracks.length} STATIONS DISPONIBLES<br>Cliquez sur PLAY pour commencer`);
+                        }
+                    }, 2000);
+                } else {
+                    showPlaceholder("ERREUR: AUCUNE STATION TROUVÉE");
+                }
             }
             
             // Fonction pour détecter le type de média
@@ -1015,39 +1112,6 @@
                 }
             }
             
-            // Fonction pour charger M3U depuis URL
-            function loadM3UFromURL(url, playlistName) {
-                showPlaceholder(`LOADING M3U: ${playlistName}`);
-                
-                fetch(url)
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error(`HTTP error! status: ${response.status}`);
-                        }
-                        return response.text();
-                    })
-                    .then(m3uContent => {
-                        const tracks = parseM3UContent(m3uContent, url);
-                        if (tracks.length > 0) {
-                            playlist = tracks;
-                            currentIndex = 0;
-                            updatePlaylistDisplay();
-                            showPlaceholder(`M3U LOADED: ${tracks.length} channels found`);
-                            setTimeout(() => {
-                                if (playlist.length > 0) {
-                                    play();
-                                }
-                            }, 1500);
-                        } else {
-                            throw new Error("No valid channels found in M3U");
-                        }
-                    })
-                    .catch(error => {
-                        console.error("M3U loading error:", error);
-                        showPlaceholder(`M3U ERROR: ${error.message}`);
-                    });
-            }
-            
             function parseM3UContent(content, baseUrl) {
                 const lines = content.split('\n');
                 const tracks = [];
@@ -1085,7 +1149,8 @@
                             currentTrack = {
                                 name: name || 'Unnamed Channel',
                                 group: trackGroup,
-                                type: 'Stream'
+                                type: 'Stream',
+                                status: 'ready'
                             };
                         }
                     } 
@@ -1333,10 +1398,18 @@
             }
 
             function addToPlaylist(track) {
+                track.status = 'ready';
                 playlist.push(track);
                 currentIndex = playlist.length - 1;
                 updatePlaylistDisplay();
                 play();
+            }
+            
+            function updateStationStatus(index, status) {
+                if (playlist[index]) {
+                    playlist[index].status = status;
+                    updatePlaylistDisplay();
+                }
             }
             
             function updatePlaylistDisplay() {
@@ -1344,12 +1417,24 @@
                 
                 playlist.forEach((item, index) => {
                     const li = document.createElement('li');
+                    
+                    // Ajouter la classe active ou error
                     if (index === currentIndex && isPlaying) {
                         li.classList.add('active');
+                    } else if (item.status === 'error') {
+                        li.classList.add('error');
+                    }
+                    
+                    // Créer l'indicateur de statut
+                    let statusHtml = '';
+                    if (index === currentIndex) {
+                        const statusClass = item.status === 'playing' ? 'playing' : 
+                                           item.status === 'error' ? 'error' : 'loading';
+                        statusHtml = `<span class="status-indicator ${statusClass}"></span>`;
                     }
                     
                     li.innerHTML = `
-                        <span>${item.name}</span>
+                        <span>${statusHtml}${item.name}</span>
                         <span>${item.type}</span>
                     `;
                     
@@ -1486,6 +1571,7 @@
                 
                 showPlaceholder(`LOADING: ${track.name}`);
                 videoPlaceholder.classList.add('pulse');
+                updateStationStatus(currentIndex, 'loading');
 
                 if (track.type === "HLS" && Hls.isSupported()) {
                     hls = new Hls({
@@ -1502,11 +1588,13 @@
                         videoPlayer.play()
                             .then(() => {
                                 videoPlaceholder.classList.remove('pulse');
+                                updateStationStatus(currentIndex, 'playing');
                                 setTimeout(updatePipButtonState, 500);
                             })
                             .catch(error => {
                                 console.error("HLS video play() error:", error);
                                 showPlaceholder(`ERROR: Cannot play HLS ${track.name}<br>(Autoplay blocked or other issue)`);
+                                updateStationStatus(currentIndex, 'error');
                                 isPlaying = false;
                                 updatePlaylistDisplay();
                             });
@@ -1532,6 +1620,7 @@
                 } else if (isAudio) {
                     // Pour tous les formats audio (MP3, AAC, etc.)
                     audioPlayer.src = track.url;
+                    audioPlayer.crossOrigin = "anonymous";
                     audioPlayer.playbackRate = playbackRate;
                     audioPlayer.addEventListener('error', handleAudioError);
                     
@@ -1545,6 +1634,7 @@
                     videoPlayer.play()
                         .then(() => {
                             videoPlaceholder.classList.remove('pulse');
+                            updateStationStatus(currentIndex, 'playing');
                             startStatsMonitoring();
                             setTimeout(updatePipButtonState, 500);
                         })
@@ -1558,165 +1648,127 @@
                             } else if (error.name === "NetworkError") {
                                 errorMessage += "<br>(Network issue)";
                             } else if (error.message.includes("autoplay")) {
-                                errorMessage += "<br>(Autoplay blocked)";
+                                errorMessage += "<br>(Autoplay blocked - Click PLAY button)";
                             }
                             showPlaceholder(errorMessage);
+                            updateStationStatus(currentIndex, 'error');
                             isPlaying = false;
                             updatePlaylistDisplay();
                         });
                 }
             }
             
-            // Nouvelle fonction améliorée pour la lecture audio avec fallbacks
+            // Fonction améliorée pour la lecture audio avec fallbacks
             function playAudioWithFallback(track) {
+                // Réinitialiser l'audio context si nécessaire
+                if (audioContext && audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+                
                 // Essayer la lecture directe d'abord
-                audioPlayer.play()
-                    .then(() => {
-                        videoPlaceholder.classList.remove('pulse');
-                        if (audioContext && audioSource) {
-                            audioSource.disconnect();
-                        }
-                        try {
-                            audioSource = audioContext.createMediaElementSource(audioPlayer);
-                            audioSource.connect(analyser);
-                            analyser.connect(audioContext.destination);
-                        } catch (e) {
-                            console.warn("Audio context not available:", e);
-                        }
-                    })
-                    .catch(error => {
-                        console.error("Audio playback error:", error);
-                        
-                        // Essayer différentes méthodes de contournement
-                        if (error.name === 'NotAllowedError' || error.message.includes('CORS')) {
-                            console.log("Trying CORS proxy for audio stream...");
-                            tryCorsProxy(track);
-                        } else if (error.name === 'NotSupportedError') {
-                            // Format non supporté, essayer avec un type MIME différent
-                            console.log("Trying with different MIME type...");
-                            tryDifferentMimeType(track);
-                        } else {
-                            showPlaceholder(`ERROR: Cannot play ${track.name}<br>${error.message}`);
-                            isPlaying = false;
-                            updatePlaylistDisplay();
-                        }
-                    });
-            }
-            
-            // Essayer un proxy CORS
-            function tryCorsProxy(track) {
-                showPlaceholder(`LOADING: ${track.name}<br>(Using CORS proxy...)`);
+                const playPromise = audioPlayer.play();
                 
-                // Utiliser un proxy CORS public
-                const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
-                const proxiedUrl = proxyUrl + track.url;
-                
-                audioPlayer.src = proxiedUrl;
-                audioPlayer.play()
-                    .then(() => {
-                        videoPlaceholder.classList.remove('pulse');
-                        if (audioContext && audioSource) {
-                            audioSource.disconnect();
-                        }
-                        try {
-                            audioSource = audioContext.createMediaElementSource(audioPlayer);
-                            audioSource.connect(analyser);
-                            analyser.connect(audioContext.destination);
-                        } catch (e) {
-                            console.warn("Audio context not available:", e);
-                        }
-                    })
-                    .catch(error => {
-                        console.error("CORS proxy also failed:", error);
-                        // Essayer une méthode de fetch
-                        tryFetchMethod(track);
-                    });
-            }
-            
-            // Essayer avec un type MIME différent
-            function tryDifferentMimeType(track) {
-                showPlaceholder(`LOADING: ${track.name}<br>(Trying different format...)`);
-                
-                // Créer un nouvel élément audio avec des attributs différents
-                const tempAudio = new Audio();
-                tempAudio.src = track.url;
-                tempAudio.type = 'audio/mpeg'; // Forcer le type MP3
-                
-                tempAudio.play()
-                    .then(() => {
-                        // Si ça marche, utiliser cet élément
-                        audioPlayer.src = track.url;
-                        audioPlayer.play()
-                            .then(() => {
-                                videoPlaceholder.classList.remove('pulse');
-                                if (audioContext && audioSource) {
-                                    audioSource.disconnect();
-                                }
+                if (playPromise !== undefined) {
+                    playPromise
+                        .then(() => {
+                            console.log("Audio playback started successfully:", track.name);
+                            videoPlaceholder.classList.remove('pulse');
+                            updateStationStatus(currentIndex, 'playing');
+                            
+                            // Connecter l'analyseur audio
+                            if (audioContext && !audioSource) {
                                 try {
                                     audioSource = audioContext.createMediaElementSource(audioPlayer);
                                     audioSource.connect(analyser);
                                     analyser.connect(audioContext.destination);
                                 } catch (e) {
-                                    console.warn("Audio context not available:", e);
+                                    console.warn("Audio context connection failed:", e);
                                 }
-                            });
-                    })
-                    .catch(error => {
-                        console.error("Different MIME type also failed:", error);
-                        showPlaceholder(`ERROR: Cannot play ${track.name}<br>Format not supported`);
-                        isPlaying = false;
-                        updatePlaylistDisplay();
-                    });
+                            }
+                        })
+                        .catch(error => {
+                            console.error("Direct audio playback failed:", error);
+                            
+                            // Essayer différentes méthodes de contournement
+                            if (error.name === 'NotAllowedError') {
+                                // Autoplay bloqué - afficher un message clair
+                                showPlaceholder(`AUTOPLAY BLOQUÉ<br>Cliquez sur PLAY pour démarrer<br>${track.name}`);
+                                updateStationStatus(currentIndex, 'error');
+                            } else if (error.name === 'NotSupportedError') {
+                                // Format non supporté
+                                showPlaceholder(`FORMAT NON SUPPORTÉ<br>${track.name}`);
+                                updateStationStatus(currentIndex, 'error');
+                            } else {
+                                // Autre erreur - essayer avec un proxy
+                                tryWithCorsProxy(track);
+                            }
+                        });
+                }
             }
             
-            // Méthode de fetch comme dernier recours
-            function tryFetchMethod(track) {
-                showPlaceholder(`LOADING: ${track.name}<br>(Trying fetch method...)`);
+            // Essayer un proxy CORS
+            function tryWithCorsProxy(track) {
+                showPlaceholder(`ESSAI AVEC PROXY CORS:<br>${track.name}`);
                 
-                fetch(track.url)
-                    .then(response => {
-                        if (!response.ok) throw new Error('Network response was not ok');
-                        return response.blob();
-                    })
-                    .then(blob => {
-                        const blobUrl = URL.createObjectURL(blob);
-                        audioPlayer.src = blobUrl;
-                        return audioPlayer.play();
-                    })
-                    .then(() => {
-                        videoPlaceholder.classList.remove('pulse');
-                        if (audioContext && audioSource) {
-                            audioSource.disconnect();
-                        }
-                        try {
-                            audioSource = audioContext.createMediaElementSource(audioPlayer);
-                            audioSource.connect(analyser);
-                            analyser.connect(audioContext.destination);
-                        } catch (e) {
-                            console.warn("Audio context not available:", e);
-                        }
-                    })
-                    .catch(error => {
-                        console.error("Fetch method also failed:", error);
-                        showPlaceholder(`ERROR: Cannot play ${track.name}<br>All methods failed`);
-                        isPlaying = false;
-                        updatePlaylistDisplay();
-                    });
+                // Utiliser plusieurs proxies CORS
+                const proxies = [
+                    'https://cors-anywhere.herokuapp.com/',
+                    'https://api.allorigins.win/raw?url=',
+                    'https://corsproxy.io/?'
+                ];
+                
+                let proxyIndex = 0;
+                
+                function tryNextProxy() {
+                    if (proxyIndex >= proxies.length) {
+                        showPlaceholder(`TOUS LES PROXIES ONT ÉCHOUÉ<br>${track.name}`);
+                        updateStationStatus(currentIndex, 'error');
+                        return;
+                    }
+                    
+                    const proxyUrl = proxies[proxyIndex] + track.url;
+                    audioPlayer.src = proxyUrl;
+                    
+                    audioPlayer.play()
+                        .then(() => {
+                            console.log("Proxy playback successful:", track.name);
+                            videoPlaceholder.classList.remove('pulse');
+                            updateStationStatus(currentIndex, 'playing');
+                            
+                            if (audioContext && !audioSource) {
+                                try {
+                                    audioSource = audioContext.createMediaElementSource(audioPlayer);
+                                    audioSource.connect(analyser);
+                                    analyser.connect(audioContext.destination);
+                                } catch (e) {
+                                    console.warn("Audio context connection failed:", e);
+                                }
+                            }
+                        })
+                        .catch(error => {
+                            console.error(`Proxy ${proxyIndex} failed:`, error);
+                            proxyIndex++;
+                            setTimeout(tryNextProxy, 1000);
+                        });
+                }
+                
+                tryNextProxy();
             }
             
             function handlePlaybackError(trackName, errorData) {
                 if (errorData.fatal) {
                     switch(errorData.type) {
                         case Hls.ErrorTypes.NETWORK_ERROR:
-                            showPlaceholder(`NETWORK ERROR: ${trackName}`);
+                            showPlaceholder(`ERREUR RÉSEAU: ${trackName}`);
                             break;
                         case Hls.ErrorTypes.MEDIA_ERROR:
-                            showPlaceholder(`MEDIA ERROR: ${trackName}`);
+                            showPlaceholder(`ERREUR MÉDIA: ${trackName}`);
                             break;
                         default:
-                            showPlaceholder(`FATAL ERROR: ${trackName}`);
+                            showPlaceholder(`ERREUR FATALE: ${trackName}`);
                             break;
                     }
+                    updateStationStatus(currentIndex, 'error');
                     isPlaying = false;
                     updatePlaylistDisplay();
                     stopStatsMonitoring();
@@ -1725,27 +1777,28 @@
 
             function handleVideoError(e) {
                 console.error("Video element error:", e);
-                let errorMessage = `VIDEO ERROR: ${playlist[currentIndex]?.name || 'Unknown'}`;
+                let errorMessage = `ERREUR VIDÉO: ${playlist[currentIndex]?.name || 'Unknown'}`;
                 if (videoPlayer.error) {
                     switch (videoPlayer.error.code) {
                         case MediaError.MEDIA_ERR_ABORTED:
-                            errorMessage += "<br>(Playback aborted)";
+                            errorMessage += "<br>(Lecture abandonnée)";
                             break;
                         case MediaError.MEDIA_ERR_NETWORK:
-                            errorMessage += "<br>(Network error)";
+                            errorMessage += "<br>(Erreur réseau)";
                             break;
                         case MediaError.MEDIA_ERR_DECODE:
-                            errorMessage += "<br>(Decoding error - unsupported codec or corrupted file)";
+                            errorMessage += "<br>(Erreur de décodage - codec non supporté)";
                             break;
                         case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
-                            errorMessage += "<br>(Source not supported - unsupported format or codec)";
+                            errorMessage += "<br>(Source non supportée)";
                             break;
                         default:
-                            errorMessage += "<br>(Unknown error)";
+                            errorMessage += "<br>(Erreur inconnue)";
                             break;
                     }
                 }
                 showPlaceholder(errorMessage);
+                updateStationStatus(currentIndex, 'error');
                 isPlaying = false;
                 updatePlaylistDisplay();
                 stopStatsMonitoring();
@@ -1753,27 +1806,28 @@
 
             function handleAudioError(e) {
                 console.error("Audio element error:", e);
-                let errorMessage = `AUDIO ERROR: ${playlist[currentIndex]?.name || 'Unknown'}`;
+                let errorMessage = `ERREUR AUDIO: ${playlist[currentIndex]?.name || 'Unknown'}`;
                 if (audioPlayer.error) {
                     switch (audioPlayer.error.code) {
                         case MediaError.MEDIA_ERR_ABORTED:
-                            errorMessage += "<br>(Playback aborted)";
+                            errorMessage += "<br>(Lecture abandonnée)";
                             break;
                         case MediaError.MEDIA_ERR_NETWORK:
-                            errorMessage += "<br>(Network error)";
+                            errorMessage += "<br>(Erreur réseau)";
                             break;
                         case MediaError.MEDIA_ERR_DECODE:
-                            errorMessage += "<br>(Decoding error - unsupported codec or corrupted file)";
+                            errorMessage += "<br>(Erreur de décodage)";
                             break;
                         case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
-                            errorMessage += "<br>(Source not supported - unsupported format or codec)";
+                            errorMessage += "<br>(Source non supportée)";
                             break;
                         default:
-                            errorMessage += "<br>(Unknown error)";
+                            errorMessage += "<br>(Erreur inconnue)";
                             break;
                     }
                 }
                 showPlaceholder(errorMessage);
+                updateStationStatus(currentIndex, 'error');
                 isPlaying = false;
                 updatePlaylistDisplay();
             }
@@ -1781,21 +1835,35 @@
             function pause() {
                 if (isAudioMode) {
                     if (audioPlayer.paused) {
-                        audioPlayer.play();
-                        visualizeAudio();
-                        showRadioInfo();
+                        audioPlayer.play()
+                            .then(() => {
+                                visualizeAudio();
+                                showRadioInfo();
+                                updateStationStatus(currentIndex, 'playing');
+                            })
+                            .catch(error => {
+                                console.error("Resume audio failed:", error);
+                            });
                     } else {
                         audioPlayer.pause();
                         cancelAnimationFrame(animationId);
                         hideRadioInfo();
+                        updateStationStatus(currentIndex, 'paused');
                     }
                 } else {
                     if (videoPlayer.paused) {
-                        videoPlayer.play();
-                        startStatsMonitoring();
+                        videoPlayer.play()
+                            .then(() => {
+                                startStatsMonitoring();
+                                updateStationStatus(currentIndex, 'playing');
+                            })
+                            .catch(error => {
+                                console.error("Resume video failed:", error);
+                            });
                     } else {
                         videoPlayer.pause();
                         stopStatsMonitoring();
+                        updateStationStatus(currentIndex, 'paused');
                     }
                 }
             }
@@ -1814,9 +1882,15 @@
                 cancelAnimationFrame(animationId);
                 stopStatsMonitoring();
                 isPlaying = false;
-                showPlaceholder("CYBERPLAYER NEON<br>READY");
+                showPlaceholder("CYBERPLAYER NEON<br>PRÊT");
                 updatePlaylistDisplay();
                 hideRadioInfo();
+                
+                // Réinitialiser tous les statuts
+                playlist.forEach((track, index) => {
+                    track.status = 'ready';
+                });
+                updatePlaylistDisplay();
                 
                 // Quitter le mode PiP si actif
                 if (document.pictureInPictureElement) {
