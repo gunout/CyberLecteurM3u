@@ -25,7 +25,26 @@ https://gradio-gleaphe.duckdns.org/radio/stream
 https://stream4.vestaradio.com/RADIOPIKAN?nocache=89908
 #EXTINF:0,13.Antenne Reunion Radio 
 https://rtlre.ice.infomaniak.ch/rtlre-64.aac
-#EXTINF:0,14.Antenne Reunion Tv 
+#EXTINF:0,14.Guyane
+https://guyane.ice.infomaniak.ch/guyane-128.mp3
+#EXTINF:0,15.Guadeloupe
+https://guadeloupe.ice.infomaniak.ch/guadeloupe-128.mp3
+#EXTINF:0,16.Martinique
+https://martinique.ice.infomaniak.ch/martinique-128.mp3
+#EXTINF:0,17.Reunion
+https://reunion.ice.infomaniak.ch/reunion-128.mp3
+#EXTINF:0,18.Mayotte
+https://mayotte.ice.infomaniak.ch/mayotte-128.mp3
+#EXTINF:0,19.Polynésie
+https://polynesie.ice.infomaniak.ch/polynesie-128.mp3
+#EXTINF:0,20.Wallis et Futuna
+https://wallisetfutuna.ice.infomaniak.ch/wallisetfutuna-128.mp3
+#EXTINF:0,21.St Pierre et Miquelon 
+https://saint-pierreetmiquelon.ice.infomaniak.ch/saint-pierreetmiquelon-128.mp3
+#EXTINF:0,22.Nouvelle Caledonie 
+https://nouvelle-caledonie.ice.infomaniak.ch/nouvelle-caledonie-128.mp3
+#EXTINF:0,23.Antenne Reunion Tv
 https://live-antenne-reunion.zeop.tv/live/c3eds/antreunihd/hls_fta/antreunihd.m3u8?location=ZEOP01
+
 
 
