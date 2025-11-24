@@ -43,8 +43,11 @@ https://wallisetfutuna.ice.infomaniak.ch/wallisetfutuna-128.mp3
 https://saint-pierreetmiquelon.ice.infomaniak.ch/saint-pierreetmiquelon-128.mp3
 #EXTINF:0,22.Nouvelle Caledonie 
 https://nouvelle-caledonie.ice.infomaniak.ch/nouvelle-caledonie-128.mp3
-#EXTINF:0,23.Antenne Reunion Tv
+#EXTINF:0,23.Outremer
+https://outremer.ice.infomaniak.ch/outremer-128.mp3
+#EXTINF:0,24.Antenne Reunion Tv
 https://live-antenne-reunion.zeop.tv/live/c3eds/antreunihd/hls_fta/antreunihd.m3u8?location=ZEOP01
+
 
 
 
