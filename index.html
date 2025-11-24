@@ -521,43 +521,17 @@
             background-color: rgba(255, 0, 255, 0.2);
         }
 
-        /* Styles pour le redimensionnement PiP */
-        .pip-resize-handle {
+        .radio-info {
             position: absolute;
-            background: var(--neon-pink);
-            z-index: 1000;
-        }
-
-        .pip-resize-handle.top-left {
-            top: -5px;
-            left: -5px;
-            width: 10px;
-            height: 10px;
-            cursor: nw-resize;
-        }
-
-        .pip-resize-handle.top-right {
-            top: -5px;
-            right: -5px;
-            width: 10px;
-            height: 10px;
-            cursor: ne-resize;
-        }
-
-        .pip-resize-handle.bottom-left {
-            bottom: -5px;
-            left: -5px;
-            width: 10px;
-            height: 10px;
-            cursor: sw-resize;
-        }
-
-        .pip-resize-handle.bottom-right {
-            bottom: -5px;
-            right: -5px;
-            width: 10px;
-            height: 10px;
-            cursor: se-resize;
+            top: 5px;
+            left: 5px;
+            background-color: rgba(5, 5, 8, 0.7);
+            border: 1px solid var(--neon-pink);
+            padding: 3px 5px;
+            font-size: 10px;
+            color: var(--neon-pink);
+            text-shadow: 0 0 5px var(--neon-pink);
+            z-index: 5;
         }
 
         /* Responsive adjustments */
@@ -610,7 +584,7 @@
                 font-size: 0.5em;
             }
             
-            .network-info {
+            .network-info, .radio-info {
                 font-size: 8px;
                 padding: 2px 3px;
             }
@@ -656,6 +630,9 @@
                     BW: 0 kbps | 
                     FPS: 0 | 
                     Res: N/A
+                </div>
+                <div class="radio-info" id="radioInfo" style="display: none;">
+                    RADIO MODE
                 </div>
                 <div class="quality-menu" id="qualityMenu"></div>
                 <div class="pip-size-menu" id="pipSizeMenu">
@@ -724,7 +701,7 @@
     <div class="copyright">© 2025 CYBERPLAYER NEON</div>
 
     <!-- Input file caché -->
-    <input type="file" id="fileInput" accept="video/*,audio/*,.m3u8,.m3u,.mp4,.mov,.avi,.mkv,.mp3,.wav,.flac">
+    <input type="file" id="fileInput" accept="video/*,audio/*,.m3u8,.m3u,.mp4,.mov,.avi,.mkv,.mp3,.wav,.flac,.aac">
 
     <!-- Boîte de dialogue pour les options de chargement -->
     <div class="dialog-overlay" id="dialogOverlay" style="display: none;"></div>
@@ -774,6 +751,7 @@
             const audioVisualizer = document.getElementById('audioVisualizer');
             const playerContainer = document.getElementById('playerContainer');
             const networkInfo = document.getElementById('networkInfo');
+            const radioInfo = document.getElementById('radioInfo');
             const qualityBtn = document.getElementById('qualityBtn');
             const qualityMenu = document.getElementById('qualityMenu');
             const pipBtn = document.getElementById('pipBtn');
@@ -802,7 +780,6 @@
             let statsInterval;
             let pipSize = 1.0;
             let isPipMode = false;
-            let pipResizeHandles = [];
             
             // Vérification du support PiP
             const isPipSupported = document.pictureInPictureEnabled;
@@ -872,6 +849,7 @@
                     updatePlaylistDisplay();
                     hidePlaceholder();
                     visualizeAudio();
+                    showRadioInfo();
                 });
                 
                 videoPlayer.addEventListener('pause', () => {
@@ -888,6 +866,7 @@
                     updatePlaylistDisplay();
                     showPlaceholder(`PAUSED: ${playlist[currentIndex]?.name || ''}`);
                     cancelAnimationFrame(animationId);
+                    hideRadioInfo();
                 });
                 
                 videoPlayer.addEventListener('ended', () => {
@@ -915,7 +894,7 @@
                 });
                 
                 loadAudioBtn.addEventListener('click', () => {
-                    fileInput.accept = "audio/*,.mp3,.wav,.flac";
+                    fileInput.accept = "audio/*,.mp3,.wav,.flac,.aac";
                     fileInput.click();
                     hideLoadDialog();
                 });
@@ -931,10 +910,7 @@
                     if (url) {
                         let name = url.split('/').pop();
                         name = name.replace(/\.[^/.]+$/, "");
-                        const ext = url.split('.').pop().toLowerCase();
-                        const type = ext === 'm3u8' ? 'HLS' : 
-                                    ['mp4','mov','avi','mkv'].includes(ext) ? 'MP4' :
-                                    ['mp3','wav','flac'].includes(ext) ? ext.toUpperCase() : 'HTTP Stream';
+                        const type = detectMediaType(url);
                         addToPlaylist({ name, url, type });
                     }
                     hideLoadDialog();
@@ -983,6 +959,29 @@
                         pipSizeMenu.classList.remove('show');
                     }
                 });
+            }
+            
+            // Fonction pour détecter le type de média
+            function detectMediaType(url) {
+                const ext = url.split('.').pop().toLowerCase();
+                if (ext === 'm3u8') return 'HLS';
+                if (['mp4','mov','avi','mkv','webm'].includes(ext)) return 'VIDEO';
+                if (['mp3','wav','flac','ogg','aac','m4a'].includes(ext)) return 'AUDIO';
+                if (url.includes('.m3u8')) return 'HLS';
+                if (url.includes('mp4') || url.includes('mov') || url.includes('avi') || url.includes('mkv')) return 'VIDEO';
+                if (url.includes('mp3') || url.includes('wav') || url.includes('flac') || url.includes('aac')) return 'AUDIO';
+                if (url.includes('icecast') || url.includes('stream') || url.includes('radio')) return 'AUDIO';
+                return 'HTTP Stream';
+            }
+            
+            // Fonction pour afficher les infos radio
+            function showRadioInfo() {
+                radioInfo.style.display = 'block';
+                radioInfo.textContent = `RADIO: ${playlist[currentIndex]?.name || 'Unknown'}`;
+            }
+            
+            function hideRadioInfo() {
+                radioInfo.style.display = 'none';
             }
             
             // Fonction pour définir la taille PiP
@@ -1115,16 +1114,8 @@
                         
                         currentTrack.url = url;
                         
-                        // Déterminer le type
-                        if (url.includes('.m3u8')) {
-                            currentTrack.type = 'HLS';
-                        } else if (url.includes('.mp4') || url.includes('.mkv')) {
-                            currentTrack.type = 'MP4';
-                        } else if (url.includes('.mp3') || url.includes('.wav') || url.includes('.flac')) {
-                            currentTrack.type = 'AUDIO';
-                        } else {
-                            currentTrack.type = 'HTTP Stream';
-                        }
+                        // Déterminer le type avec la fonction améliorée
+                        currentTrack.type = detectMediaType(url);
                         
                         tracks.push(currentTrack);
                         currentTrack = null;
@@ -1336,7 +1327,7 @@
                     });
                 }
                 else if (file.type.startsWith('audio/') || 
-                        ['mp3', 'wav', 'flac'].includes(fileExt)) {
+                        ['mp3', 'wav', 'flac', 'aac', 'm4a'].includes(fileExt)) {
                     const fileUrl = URL.createObjectURL(file);
                     addToPlaylist({
                         name: displayName,
@@ -1385,6 +1376,7 @@
                 videoPlayer.style.display = 'none';
                 audioVisualizer.style.display = 'none';
                 networkInfo.style.display = 'none';
+                radioInfo.style.display = 'none';
             }
 
             function hidePlaceholder() {
@@ -1487,11 +1479,13 @@
                 audioPlayer.load();
                 cancelAnimationFrame(animationId);
                 stopStatsMonitoring();
+                hideRadioInfo();
 
                 videoPlayer.removeEventListener('error', handleVideoError);
                 audioPlayer.removeEventListener('error', handleAudioError);
 
-                const isAudio = ['MP3', 'WAV', 'FLAC', 'AUDIO'].includes(track.type);
+                // Déterminer si c'est du contenu audio ou vidéo
+                const isAudio = ['AUDIO', 'MP3', 'WAV', 'FLAC', 'AAC', 'M4A'].includes(track.type);
                 isAudioMode = isAudio;
                 
                 // Mettre à jour l'état PiP
@@ -1543,6 +1537,7 @@
                         handlePlaybackError(track.name, data);
                     });
                 } else if (isAudio) {
+                    // Pour tous les formats audio (MP3, AAC, etc.)
                     audioPlayer.src = track.url;
                     audioPlayer.playbackRate = playbackRate;
                     audioPlayer.addEventListener('error', handleAudioError);
@@ -1552,17 +1547,29 @@
                             if (audioContext && audioSource) {
                                 audioSource.disconnect();
                             }
-                            audioSource = audioContext.createMediaElementSource(audioPlayer);
-                            audioSource.connect(analyser);
-                            analyser.connect(audioContext.destination);
+                            try {
+                                audioSource = audioContext.createMediaElementSource(audioPlayer);
+                                audioSource.connect(analyser);
+                                analyser.connect(audioContext.destination);
+                            } catch (e) {
+                                console.warn("Audio context not available:", e);
+                            }
                         })
                         .catch(error => {
                             console.error("Audio playback error:", error);
-                            showPlaceholder(`ERROR: Cannot play ${track.name}<br>(Autoplay blocked or other issue)`);
-                            isPlaying = false;
-                            updatePlaylistDisplay();
+                            // Essayer de contourner les restrictions CORS pour les streams audio
+                            if (error.name === 'NotAllowedError' || error.message.includes('CORS')) {
+                                console.log("Trying to bypass CORS for audio stream...");
+                                // Créer un proxy simple via fetch
+                                fetchAudioStream(track.url);
+                            } else {
+                                showPlaceholder(`ERROR: Cannot play ${track.name}<br>${error.message}`);
+                                isPlaying = false;
+                                updatePlaylistDisplay();
+                            }
                         });
                 } else {
+                    // Pour les autres types de contenu (vidéo standard)
                     videoPlayer.src = track.url;
                     videoPlayer.playbackRate = playbackRate;
                     videoPlayer.addEventListener('error', handleVideoError);
@@ -1589,6 +1596,43 @@
                             updatePlaylistDisplay();
                         });
                 }
+            }
+            
+            // Fonction pour contourner les restrictions CORS pour les streams audio
+            function fetchAudioStream(url) {
+                showPlaceholder(`LOADING STREAM: ${playlist[currentIndex]?.name || ''}<br>(Bypassing CORS...)`);
+                
+                // Créer un proxy simple via fetch
+                fetch(url)
+                    .then(response => {
+                        if (!response.ok) throw new Error('Network response was not ok');
+                        return response.blob();
+                    })
+                    .then(blob => {
+                        const blobUrl = URL.createObjectURL(blob);
+                        audioPlayer.src = blobUrl;
+                        audioPlayer.playbackRate = playbackRate;
+                        return audioPlayer.play();
+                    })
+                    .then(() => {
+                        videoPlaceholder.classList.remove('pulse');
+                        if (audioContext && audioSource) {
+                            audioSource.disconnect();
+                        }
+                        try {
+                            audioSource = audioContext.createMediaElementSource(audioPlayer);
+                            audioSource.connect(analyser);
+                            analyser.connect(audioContext.destination);
+                        } catch (e) {
+                            console.warn("Audio context not available:", e);
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Failed to fetch audio stream:", error);
+                        showPlaceholder(`ERROR: Cannot play ${playlist[currentIndex]?.name || ''}<br>Stream not accessible`);
+                        isPlaying = false;
+                        updatePlaylistDisplay();
+                    });
             }
             
             function handlePlaybackError(trackName, errorData) {
@@ -1670,9 +1714,11 @@
                     if (audioPlayer.paused) {
                         audioPlayer.play();
                         visualizeAudio();
+                        showRadioInfo();
                     } else {
                         audioPlayer.pause();
                         cancelAnimationFrame(animationId);
+                        hideRadioInfo();
                     }
                 } else {
                     if (videoPlayer.paused) {
@@ -1701,6 +1747,7 @@
                 isPlaying = false;
                 showPlaceholder("CYBERPLAYER NEON<br>READY");
                 updatePlaylistDisplay();
+                hideRadioInfo();
                 
                 // Quitter le mode PiP si actif
                 if (document.pictureInPictureElement) {
