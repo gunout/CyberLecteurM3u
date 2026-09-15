@@ -3,9 +3,10 @@
 # ============================================================
 # 🇫🇷 CHAÎNES FRANÇAISES GRATUITES — FLUX OFFICIELS
 # ============================================================
-# Playlist compilee a partir de flux officiels et gratuits.
-# Sources : Free-TV/IPTV, iptv-org/iptv, sites officiels des chaines.
-# Certaines chaines peuvent etre geo-restreintes (indique ci-dessous).
+# Playlist enrichie — version 2.0
+# Sources : iptv-org/iptv, Free-TV/IPTV, Samsung TV Plus, Pluto TV,
+#           Rakuten TV, sites officiels des diffuseurs.
+# Certaines chaînes peuvent être géo-restreintes (indiqué ci-dessous).
 # ============================================================
 
 # ============================================================
@@ -45,9 +46,6 @@ https://ncdn-live-bfm.pfd.sfr.net/shls/LIVE$BFM_BUSINESS/index.m3u8?start=LIVE&e
 #EXTINF:-1 tvg-id="BFM2.fr" tvg-logo="https://i.ibb.co/2MhqYgg/bfm2.png" group-title="Information",BFM 2
 https://live-cdn-bfm2-euw1.bfmtv.bct.nextradiotv.com/m5/media.m3u8
 
-#EXTINF:-1 tvg-id="BFMGrandReportages.fr" tvg-logo="https://i.ibb.co/ChVvjpF/bfmgr.jpg" group-title="Information",BFM GRAND REPORTAGES
-https://ncdn-live-bfm.pfd.sfr.net/shls/LIVE$BFM_GRANDSREPORTAGES/index.m3u8?start=LIVE&end=END
-
 #EXTINF:-1 tvg-id="RMCTalkInfo.fr" tvg-logo="https://i.ibb.co/k4Bs0Cj/rmcti.jpg" group-title="Information",RMC TALK INFO
 https://dvvyqyxwlc4tn.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-n5yqxqrvnujl7/index.m3u8
 
@@ -77,6 +75,9 @@ https://bloomberg-bloombergtv-1-fr.samsung.wurl.tv/manifest/playlist.m3u8
 
 #EXTINF:-1 tvg-id="Bsmart.fr" tvg-logo="https://i.ibb.co/Tm8bZHc/bsmart.png" group-title="Information",B SMART
 https://raw.githubusercontent.com/Sibprod/streams/main/ressources/dm/py/hls/bsmart.m3u8
+
+#EXTINF:-1 tvg-id="BFMGrandsReportages.fr" tvg-logo="https://i.ibb.co/ChVvjpF/bfmgr.jpg" group-title="Information",BFM GRANDS REPORTAGES
+https://ncdn-live-bfm.pfd.sfr.net/shls/LIVE$BFM_GRANDSREPORTAGES/index.m3u8?start=LIVE&end=END
 
 # ============================================================
 # 📺 GÉNÉRALISTES (TNT GRATUITE)
@@ -137,6 +138,12 @@ https://d3kwy5wwq7dpr1.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68
 #EXTINF:-1 tvg-id="SonyOne.fr" tvg-logo="https://i.ibb.co/XrCWVxLd/sonyonefr.png" group-title="Cinema",SONY ONE HITS ACTION
 https://5098a8b860504a3690fd2e7c0a18d68f.mediatailor.us-west-2.amazonaws.com/v1/master/ba62fe743df0fe93366eba3a257d792884136c7f/LINEAR-817-FR-SONYONEHITSACTION-LG_FR/playlist.m3u8
 
+#EXTINF:-1 tvg-id="SonyOneComedie.fr" tvg-logo="https://i.ibb.co/XrCWVxLd/sonyonefr.png" group-title="Cinema",SONY ONE HITS COMEDIE
+https://7aa9671895264ec9a384dfed1b992171.mediatailor.us-west-2.amazonaws.com/v1/master/ba62fe743df0fe93366eba3a257d792884136c7f/LINEAR-818-FR-SONYONEHITSCOMDIE-LG_FR/playlist.m3u8
+
+#EXTINF:-1 tvg-id="SonyOneThriller.fr" tvg-logo="https://i.ibb.co/XrCWVxLd/sonyonefr.png" group-title="Cinema",SONY ONE SERIES THRILLER
+https://483a1e90c18641c9a6d27becd41ad892.mediatailor.us-west-2.amazonaws.com/v1/master/ba62fe743df0fe93366eba3a257d792884136c7f/LINEAR-821-FR-SONYONESRIESTHRILLER-LG_FR/playlist.m3u8
+
 #EXTINF:-1 tvg-id="UniversCine.fr" tvg-logo="https://i.ibb.co/f1FyTkt/universcine.jpg" group-title="Cinema",UNIVERS CINÉ
 https://samsunguk-universcine-samsung-fre-xxgab.amagi.tv/playlist/samsunguk-universcine-samsung-fre/playlist.m3u8
 
@@ -145,6 +152,60 @@ https://versatile-wildsidetv-1-fr.samsung.wurl.tv/playlist.m3u8
 
 #EXTINF:-1 tvg-id="TeleNovela.fr" tvg-logo="https://i.ibb.co/grBSqt4/novela.png" group-title="Cinema",TELE NOVELA TV
 https://stormcast-telenovelatv-1-fr.samsung.wurl.tv/playlist.m3u8
+
+#EXTINF:-1 tvg-id="RakutenTopMovies.fr" tvg-logo="https://i.ibb.co/3v8W06Q/rakutenfilms.png" group-title="Cinema",RAKUTEN TOP FILMS
+https://01ac9352fbfa4204998783d41f9b1a2e.mediatailor.eu-west-1.amazonaws.com/v1/master/0547f18649bd788bec7b67b746e47670f558b6b2/production-LiveChannel-6068/master.m3u8
+
+#EXTINF:-1 tvg-id="RakutenComedie.fr" tvg-logo="https://i.ibb.co/3v8W06Q/rakutenfilms.png" group-title="Cinema",RAKUTEN COMEDY FILMS
+https://cc9f70371e7144e7acae4de8b5832d7a.mediatailor.eu-west-1.amazonaws.com/v1/master/0547f18649bd788bec7b67b746e47670f558b6b2/production-LiveChannel-6183/master.m3u8
+
+#EXTINF:-1 tvg-id="RakutenDrama.fr" tvg-logo="https://i.ibb.co/3v8W06Q/rakutenfilms.png" group-title="Cinema",RAKUTEN DRAMA FILMS
+https://f396f4db84a54f7bb496b2541477b626.mediatailor.eu-west-1.amazonaws.com/v1/master/0547f18649bd788bec7b67b746e47670f558b6b2/production-LiveChannel-6095/master.m3u8
+
+#EXTINF:-1 tvg-id="PlutoCine.fr" tvg-logo="https://i.ibb.co/px6TJjx/plutocine.jpg" group-title="Cinema",PLUTO CINÉ
+https://jmp2.uk/sam-FRAJ3800002W5.m3u8
+
+#EXTINF:-1 tvg-id="PlutoPolar.fr" tvg-logo="https://i.ibb.co/h1M7Xrt/plutopolar.jpg" group-title="Cinema",PLUTO POLAR
+https://jmp2.uk/sam-FRAJ38000089S.m3u8
+
+#EXTINF:-1 tvg-id="PassionNovelas.fr" tvg-logo="https://i.ibb.co/grBSqt4/novela.png" group-title="Cinema",PASSION NOVELAS
+https://d219tvyafu2vka.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-csm4hzxgjueax/index.m3u8
+
+#EXTINF:-1 tvg-id="FrequenceNovelas.fr" tvg-logo="https://i.ibb.co/grBSqt4/novela.png" group-title="Cinema",FRÉQUENCE NOVELAS
+https://d20oth1416y9a1.cloudfront.net/playlist/amg00711-zylofast-frequencenovelas-rakutenus/playlist.m3u8
+
+#EXTINF:-1 tvg-id="PlutoTeenSeries.fr" tvg-logo="https://i.ibb.co/2SHJGsj/allocine.png" group-title="Cinema",PLUTO TV TEEN SERIES
+https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5f8eb7e3d2ed18000746d09a/master.m3u8
+
+#EXTINF:-1 tvg-id="PlutoTelenovela.fr" tvg-logo="https://i.ibb.co/grBSqt4/novela.png" group-title="Cinema",PLUTO TV TELENOVELA
+https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5f914f9dccb4de0007df8bc4/master.m3u8
+
+#EXTINF:-1 tvg-id="UnVillageFrancais.fr" tvg-logo="https://i.ibb.co/2SHJGsj/allocine.png" group-title="Cinema",UN VILLAGE FRANÇAIS
+https://raw.githubusercontent.com/Free-TV/IPTV/master/lists/france.md
+
+#EXTINF:-1 tvg-id="100Cinema.fr" tvg-logo="https://i.ibb.co/2SHJGsj/allocine.png" group-title="Cinema",100% CINEMA
+https://raw.githubusercontent.com/Free-TV/IPTV/master/lists/france.md
+
+#EXTINF:-1 tvg-id="BoxOfficeTeens.fr" tvg-logo="https://i.ibb.co/2SHJGsj/allocine.png" group-title="Cinema",BOX OFFICE TEENS
+https://raw.githubusercontent.com/Free-TV/IPTV/master/lists/france.md
+
+#EXTINF:-1 tvg-id="Popcorn.fr" tvg-logo="https://i.ibb.co/2SHJGsj/allocine.png" group-title="Cinema",POPCORN
+https://raw.githubusercontent.com/Free-TV/IPTV/master/lists/france.md
+
+#EXTINF:-1 tvg-id="Shadowz.fr" tvg-logo="https://i.ibb.co/kDmhscZ/mgg.png" group-title="Cinema",SHADOWZ TV
+https://raw.githubusercontent.com/Free-TV/IPTV/master/lists/france.md
+
+#EXTINF:-1 tvg-id="BBCtopGearFrance.fr" tvg-logo="https://i.ibb.co/2SHJGsj/allocine.png" group-title="Cinema",BBC TOP GEAR FRANCE
+https://amg00793-amg00793c45-rakuten-fr-5539.playouts.now.amagi.tv/playlist.m3u8
+
+#EXTINF:-1 tvg-id="GrjngoWestern.fr" tvg-logo="https://i.ibb.co/QbDCvVf/cinewestern.png" group-title="Cinema",GRJNGO FILMS DE WESTERN
+https://amg00793-amg00793c45-rakuten-fr-5539.playouts.now.amagi.tv/playlist.m3u8
+
+#EXTINF:-1 tvg-id="ComediesRakuten.fr" tvg-logo="https://i.ibb.co/3v8W06Q/rakutenfilms.png" group-title="Cinema",COMÉDIES - RAKUTEN TV
+https://jmp2.uk/stvp-FR26000068C
+
+#EXTINF:-1 tvg-id="ThrillersRakuten.fr" tvg-logo="https://i.ibb.co/3v8W06Q/rakutenfilms.png" group-title="Cinema",THRILLERS - RAKUTEN TV
+https://jmp2.uk/stvp-FR26000068C
 
 # ============================================================
 # 🧠 CULTURE, DOCUMENTAIRES & SOCIÉTÉ
@@ -174,6 +235,9 @@ https://0b0a5371d15f48128cf69b029230eac6.mediatailor.us-east-1.amazonaws.com/v1/
 #EXTINF:-1 tvg-id="TV5MondeVoyage.fr" tvg-logo="https://i.ibb.co/vxqS6F0/tv5voyage.png" group-title="Documentaires",TV5MONDE VOYAGE
 https://d1qvkge2x4ev90.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-8q6p9i1t9dw2k/tvfvo.m3u8
 
+#EXTINF:-1 tvg-id="TV5MondeChefs.fr" tvg-logo="https://i.ibb.co/vxqS6F0/tv5voyage.png" group-title="Documentaires",TV5MONDE+ CHEFS
+https://raw.githubusercontent.com/Free-TV/IPTV/master/lists/france.md
+
 #EXTINF:-1 tvg-id="VoyagesSaveurs.fr" tvg-logo="https://i.ibb.co/2F8Cqdn/voyagessaveurs.png" group-title="Documentaires",VOYAGES ET SAVEURS
 https://amg01821-amg01821c24-samsung-fr-5157.playouts.now.amagi.tv/playlist/amg01821-lovetvfast-voyagesandsaveurs-samsungfr/playlist.m3u8
 
@@ -195,6 +259,27 @@ https://raw.githubusercontent.com/ipstreet312/freeiptv/master/ressources/dmotion
 #EXTINF:-1 tvg-id="FashionTV.fr" tvg-logo="https://i.ibb.co/LYbF1Wt/fashionok.png" group-title="Documentaires",FASHION TV
 https://fashiontv-fashiontv-1-eu.rakuten.wurl.tv/playlist.m3u8
 
+#EXTINF:-1 tvg-id="RMCWOW.fr" tvg-logo="https://i.ibb.co/VS4xR2g/rmcdecou.png" group-title="Documentaires",RMC WOW
+https://raw.githubusercontent.com/Free-TV/IPTV/master/lists/france.md
+
+#EXTINF:-1 tvg-id="RMCMystere.fr" tvg-logo="https://i.ibb.co/VS4xR2g/rmcdecou.png" group-title="Documentaires",RMC MYSTÈRE
+https://raw.githubusercontent.com/Free-TV/IPTV/master/lists/france.md
+
+#EXTINF:-1 tvg-id="RMCAlerteSecours.fr" tvg-logo="https://i.ibb.co/VS4xR2g/rmcdecou.png" group-title="Documentaires",RMC ALERTE SECOURS
+https://raw.githubusercontent.com/Free-TV/IPTV/master/lists/france.md
+
+#EXTINF:-1 tvg-id="RMCMecanic.fr" tvg-logo="https://i.ibb.co/VS4xR2g/rmcdecou.png" group-title="Documentaires",RMC MECANIC
+https://raw.githubusercontent.com/Free-TV/IPTV/master/lists/france.md
+
+#EXTINF:-1 tvg-id="100Docs.fr" tvg-logo="https://i.ibb.co/kJjHW61/frdocs.png" group-title="Documentaires",100% DOCS
+https://raw.githubusercontent.com/Free-TV/IPTV/master/lists/france.md
+
+#EXTINF:-1 tvg-id="Ardivision.fr" tvg-logo="https://i.ibb.co/kJjHW61/frdocs.png" group-title="Documentaires",ARDIVISION
+https://raw.githubusercontent.com/Free-TV/IPTV/master/lists/france.md
+
+#EXTINF:-1 tvg-id="RMCJiraiDormir.fr" tvg-logo="https://i.ibb.co/VS4xR2g/rmcdecou.png" group-title="Documentaires",RMC J'IRAI DORMIR CHEZ VOUS
+https://raw.githubusercontent.com/Free-TV/IPTV/master/lists/france.md
+
 # ============================================================
 # 🧒 JEUNESSE
 # ============================================================
@@ -214,12 +299,21 @@ https://jmp2.uk/sam-FRAJ38000035M.m3u8
 #EXTINF:-1 tvg-id="TV5MondeTiVi.fr" tvg-logo="https://i.ibb.co/Jpk0d48/tv5tivi.png" group-title="Jeunesse",TV5MONDE TiVi
 https://ott.tv5monde.com/Content/HLS/Live/channel(tivi5)/index.m3u8
 
+#EXTINF:-1 tvg-id="ADN.fr" tvg-logo="https://i.ibb.co/m4qxfcH/supertoons.jpg" group-title="Jeunesse",ADN (ANIMATION DIGITAL NETWORK)
+https://raw.githubusercontent.com/Free-TV/IPTV/master/lists/france.md
+
+#EXTINF:-1 tvg-id="Eclutch.fr" tvg-logo="https://i.ibb.co/kDmhscZ/mgg.png" group-title="Jeunesse",ECLUTCH (ESPORT)
+https://raw.githubusercontent.com/Free-TV/IPTV/master/lists/france.md
+
 # ============================================================
 # 🎵 MUSIQUE
 # ============================================================
 
 #EXTINF:-1 tvg-id="TraceUrban.fr" tvg-logo="https://i.ibb.co/2hgmDs6/traceurb.png" group-title="Musique",TRACE URBAN
 https://lightning-traceurban-samsungau.amagi.tv/playlist.m3u8
+
+#EXTINF:-1 tvg-id="TraceLatina.fr" tvg-logo="https://i.ibb.co/vvhRkHZ/tracelatina.png" group-title="Musique",TRACE LATINA
+https://cdn-uw2-prod.tsv2.amagi.tv/linear/amg01131-tracetv-tracelatinaes-samsungspain/playlist.m3u8
 
 #EXTINF:-1 tvg-id="TraceSports.fr" tvg-logo="https://i.ibb.co/sWxH6cv/tracesports.png" group-title="Musique",TRACE SPORTS
 https://lightning-tracesport-samsungau.amagi.tv/playlist.m3u8
@@ -230,11 +324,23 @@ https://d3vxz540ozij3t.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68
 #EXTINF:-1 tvg-id="Vevo90.fr" tvg-logo="https://i.ibb.co/3CtD77v/vevo90.png" group-title="Musique",VEVO 90 00
 https://d2q982f39qtdzh.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-np9jnkbfjxrog/Vevo90and2000_FR.m3u8
 
+#EXTINF:-1 tvg-id="VevoHipHop.fr" tvg-logo="https://i.ibb.co/WFQ0NCF/vevohprb.png" group-title="Musique",VEVO HIP-HOP & R&B
+https://d3mzlmrngyf08j.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-55k4m9whplndi/playlist.m3u8
+
 #EXTINF:-1 tvg-id="ClubbingTV.fr" tvg-logo="https://i.ibb.co/M5P1TMG/clubbing.png" group-title="Musique",CLUBBING TV
 https://clubbingtv-rakuten.amagi.tv/playlist.m3u8
 
 #EXTINF:-1 tvg-id="QwestJazz.fr" tvg-logo="https://i.ibb.co/B2Z50vtt/qwest.png" group-title="Musique",QWEST JAZZ
 https://qwestjazz-rakuten.amagi.tv/hls/amagi_hls_data_rakutenAA-qwestjazz-rakuten/CDN/master.m3u8
+
+#EXTINF:-1 tvg-id="QwestTVClassical.fr" tvg-logo="https://i.ibb.co/B2Z50vtt/qwest.png" group-title="Musique",QWEST TV CLASSICAL [Geo]
+https://cdn-ue1-prod.tsv2.amagi.tv/linear/qwestAAAA-qwestclassic-uk-samsungtv/playlist.m3u8
+
+#EXTINF:-1 tvg-id="MusicBoxSexy.fr" tvg-logo="https://i.ibb.co/6RvHVvn/dlxdtschpp.png" group-title="Musique",MUSIC BOX SEXY
+https://dash4.antik.sk/live/mb_sexy/index.m3u8
+
+#EXTINF:-1 tvg-id="MusicBoxHits.fr" tvg-logo="https://i.ibb.co/6RvHVvn/dlxdtschpp.png" group-title="Musique",MUSIC BOX HITS
+https://dash4.antik.sk/live/mb_hits/index.m3u8
 
 # ============================================================
 # ⚽ SPORT
@@ -273,8 +379,11 @@ https://d1mdvi698umja9.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68
 #EXTINF:-1 tvg-id="DriveAuto.fr" tvg-logo="https://i.ibb.co/Xs1PxZs/driveauto.png" group-title="Sport",DRIVE AUTO
 https://amg01796-amg01796c2-rakuten-uk-3887.playouts.now.amagi.tv/playlist/amg01796-fastmediafast-drivetv-rakutenuk/playlist.m3u8
 
+#EXTINF:-1 tvg-id="RedBullTV.fr" tvg-logo="https://i.ibb.co/0YKFn02/motorvisionfrs.png" group-title="Sport",RED BULL TV
+https://raw.githubusercontent.com/Free-TV/IPTV/master/lists/france.md
+
 #EXTINF:-1 tvg-id="TechCo.fr" tvg-logo="https://i.ibb.co/443jKxq/techco.png" group-title="Sport",TECH&CO
-https://live-cdn-technco-euw1.bfmb.bct.nextradiotv.com/m1/media.m3u8
+https://live-cdn-technco-euw1.bfmb.bct.nextradiotv.com/m1/media.m3u8?bpkio_serviceid=7de32147a4f1055bd2f1574d94862544
 
 # ============================================================
 # 🌍 CHAÎNES RÉGIONALES & LOCALES
@@ -294,6 +403,18 @@ https://ncdn-live-bfm.pfd.sfr.net/shls/LIVE$BFM_MARSEILLEPROV/index.m3u8?start=L
 
 #EXTINF:-1 tvg-id="BFMParis.fr" tvg-logo="https://i.ibb.co/mzhSFNV/bfmregions.png" group-title="Regions",BFM PARIS
 https://ncdn-live-bfm.pfd.sfr.net/shls/LIVE$BFM_PARIS/index.m3u8?start=LIVE&end=END
+
+#EXTINF:-1 tvg-id="BFMLille.fr" tvg-logo="https://i.ibb.co/mzhSFNV/bfmregions.png" group-title="Regions",BFM LILLE
+https://ncdn-live-bfm.pfd.sfr.net/shls/LIVE$BFMGRANDLILLE/index.m3u8?start=LIVE&end=END
+
+#EXTINF:-1 tvg-id="BFMNormandie.fr" tvg-logo="https://i.ibb.co/mzhSFNV/bfmregions.png" group-title="Regions",BFM NORMANDIE
+https://ncdn-live-bfm.pfd.sfr.net/shls/LIVE$BFM_NORMANDIE/index.m3u8?start=LIVE&end=END
+
+#EXTINF:-1 tvg-id="BFMToulon.fr" tvg-logo="https://i.ibb.co/mzhSFNV/bfmregions.png" group-title="Regions",BFM TOULON
+https://ncdn-live-bfm.pfd.sfr.net/shls/LIVE$BFM_TOULONVAR/index.m3u8?start=LIVE&end=END
+
+#EXTINF:-1 tvg-id="BFMLittoral.fr" tvg-logo="https://i.ibb.co/mzhSFNV/bfmregions.png" group-title="Regions",BFM LITTORAL
+https://ncdn-live-bfm.pfd.sfr.net/shls/LIVE$BFMGRANDLITTORAL/index.m3u8?start=LIVE&end=END
 
 #EXTINF:-1 tvg-id="TVRennes.fr" tvg-logo="https://i.ibb.co/3k4Lv34/tvrennes.png" group-title="Regions",TVR RENNES
 https://cdn.live.easybroadcast.io/abr_corp/54_tvr_vtucuxt/playlist.m3u8
@@ -345,6 +466,60 @@ https://github.com/Sibprod/streams/raw/main/ressources/twitch/hls/LMTVSarthe.m3u
 
 #EXTINF:-1 tvg-id="TL7Loire.fr" tvg-logo="https://i.ibb.co/yRLR4Ny/tl7l.png" group-title="Regions",TL7 LOIRE
 https://raw.githubusercontent.com/SebTV-prod/streams/refs/heads/main/ressources/twitch/hls/TL7.m3u8
+
+#EXTINF:-1 tvg-id="BIPTV.fr" tvg-logo="https://i.ibb.co/61mqv2h/biptv.png" group-title="Regions",BIP TV
+https://www.biptv.tv/live/biptvstream.m3u8
+
+#EXTINF:-1 tvg-id="Canal32.fr" tvg-logo="https://i.ibb.co/Dpsn6ZV/c32.png" group-title="Regions",CANAL 32
+https://edge17.vedge.infomaniak.com/livecast/ik:canal32_4/manifest.m3u8
+
+#EXTINF:-1 tvg-id="ILTV.fr" tvg-logo="https://i.ibb.co/YLL42C6/iltv.png" group-title="Regions",IL TV
+https://live.creacast.com/iltv/smil:iltv.smil/playlist.m3u8
+
+#EXTINF:-1 tvg-id="MoselleTV.fr" tvg-logo="https://i.ibb.co/vmqkmDB/moselle.jpg" group-title="Regions",MOSELLE TV
+https://live.creacast.com/mirabelletv/smil:mirabelletv.smil/playlist.m3u8
+
+#EXTINF:-1 tvg-id="TV3V.fr" tvg-logo="https://i.ibb.co/2nG96GF/tv3v.png" group-title="Regions",TV 3V
+https://tv3v.live-kd.com/live/tv3v/livestream/playlist.m3u8
+
+#EXTINF:-1 tvg-id="ViaMatele.fr" tvg-logo="https://i.ibb.co/4ZfHZhf/viamatele.png" group-title="Regions",VIA MATÉLÉ
+https://5dd226f8f01e8.streamlock.net/via-matele-live/matelelive_1080/playlist.m3u8
+
+#EXTINF:-1 tvg-id="ViaOccitanie.fr" tvg-logo="https://i.ibb.co/3My0NGd/viaocc.png" group-title="Regions",VIA OCCITANIE
+https://streamer01.myvideoplace.tv/streamer02/hls/MDS_VIA_PAD_301117.m3u8
+
+#EXTINF:-1 tvg-id="NancyWebTV.fr" tvg-logo="https://i.ibb.co/KGNTppx/nancyweb.jpg" group-title="Regions",NANCY WEB TV
+https://edge12.vedge.infomaniak.com/livecast/ik:nancy-webtv/manifest.m3u8
+
+#EXTINF:-1 tvg-id="MaurienneTV.fr" tvg-logo="https://i.ibb.co/MMDSDQ9/maurienne.png" group-title="Regions",MAURIENNE TV
+https://raw.githubusercontent.com/SebTV-prod/streams/refs/heads/main/ressources/twitch/hls/MaurienneTV.m3u8
+
+#EXTINF:-1 tvg-id="TGOhelle.fr" tvg-logo="https://i.ibb.co/VNDPTDY/tgohelle.png" group-title="Regions",TÉLÉ GOHELLE
+https://videas.agglo-lenslievin.fr/index.m3u8
+
+#EXTINF:-1 tvg-id="PuissanceTV.fr" tvg-logo="https://i.ibb.co/1rDLsMp/puisstv.png" group-title="Regions",PUISSANCE TÉLÉVISION
+https://edge13.vedge.infomaniak.com/livecast/ik:puissancetelevision/manifest.m3u8
+
+#EXTINF:-1 tvg-id="KanalDude.fr" tvg-logo="https://i.ibb.co/2Zb8Gmb/kdude.png" group-title="Regions",KANAL DUDE
+https://5aa375514fbab.streamlock.net:8090/tbzain/smil:kanaldude.smil/manifest.m3u8
+
+#EXTINF:-1 tvg-id="CannesLerins.fr" tvg-logo="https://i.ibb.co/0q3DHhF/cannesler.png" group-title="Regions",CANNES LÉRINS TV
+https://vdo2.pro-fhi.net:3628/live/uppodsfqlive.m3u8
+
+#EXTINF:-1 tvg-id="LittoralTV.fr" tvg-logo="https://i.ibb.co/tLPxcFn/littoral.png" group-title="Regions",LITTORAL TV
+https://live.creacast.com/littoralfm-ch1/stream/playlist.m3u8
+
+#EXTINF:-1 tvg-id="TVTarn.fr" tvg-logo="https://i.ibb.co/QYJL1N7/tarn.png" group-title="Regions",TV TARN
+https://live.creacast.com/albi-tv-ch1/stream/master.m3u8
+
+#EXTINF:-1 tvg-id="TV8MontBlanc.fr" tvg-logo="https://i.ibb.co/74fJt5v/8mblanc.png" group-title="Regions",TV8 MONTBLANC
+https://raw.githubusercontent.com/azgaresncf/strm2hls/main/streams/8_Mont-Blanc.m3u8
+
+#EXTINF:-1 tvg-id="N31.fr" tvg-logo="https://i.ibb.co/gj4ZGdY/n31.jpg" group-title="Regions",N31
+https://github.com/Sibprod/streams/raw/main/ressources/dm/py/hls/n31.m3u8
+
+#EXTINF:-1 tvg-id="ASTV.fr" tvg-logo="https://i.ibb.co/2qs2HxR/astv.png" group-title="Regions",ASTV
+https://raw.githubusercontent.com/SebTV-prod/streams/refs/heads/main/ressources/twitch/hls/ASTV.m3u8
 
 # ============================================================
 # 🌐 CHAÎNES INTERNATIONALES EN FRANÇAIS
